@@ -50,10 +50,26 @@ const FlagIcon = ({ className }: { className?: string }) => (
 );
 
 const PortIcon = ({ className }: { className?: string }) => (
-    <svg className={className} width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="20" cy="20" r="18" fill="#ORANGE" stroke="black" strokeWidth="2"/>
-        <circle cx="20" cy="20" r="12" fill="white" stroke="black" strokeWidth="2"/>
-        <circle cx="20" cy="20" r="4" fill="black"/>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 300 300"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="14"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M70 250 L70 210 L110 210 L110 250" />
+      <path d="M190 250 L190 210 L230 210 L230 250" />
+      <rect x="70" y="180" width="160" height="30" rx="4" />
+      <rect x="90" y="150" width="120" height="30" rx="4" />
+      <rect x="100" y="120" width="100" height="30" rx="4" />
+      <rect x="110" y="90" width="80" height="30" rx="4" />
+      <path d="M140 90 L260 40" />
+      <path d="M180 90 L260 40" />
+      <line x1="260" y1="40" x2="260" y2="120" />
+      <circle cx="260" cy="145" r="5" fill="black" />
     </svg>
 );
 
@@ -74,12 +90,12 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
         <div className="relative pt-8 pb-10">
           <div className="flex items-center justify-between">
             <div className="flex flex-col items-center">
-              <PortIcon />
+              <PortIcon className="w-10 h-10 text-gray-700"/>
               <p className="mt-2 text-lg font-semibold">{vessel.origin}</p>
             </div>
             <div className="flex-grow h-0.5 bg-black mx-4" />
             <div className="flex flex-col items-center">
-              <PortIcon />
+              <PortIcon className="w-10 h-10 text-gray-700"/>
               <p className="mt-2 text-lg font-semibold">{vessel.destination}</p>
             </div>
           </div>
