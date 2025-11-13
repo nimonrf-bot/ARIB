@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,6 +13,19 @@ import { useTranslation } from '@/context/language-context';
 import { updateVessels } from '@/ai/flows/update-vessels-flow';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const portNames = [
+  'Caspian',
+  'Anzali',
+  'Amirabad',
+  'Noshahr',
+  'Freidunkenar',
+  'Astrakhan',
+  'Makhachkala',
+  'Arib',
+  'Ola',
+];
 
 function VesselAdminDashboard() {
   const { t } = useTranslation();
@@ -28,6 +42,26 @@ function VesselAdminDashboard() {
 
   const handleVesselChange = (index: number, field: keyof Vessel, value: string | number | boolean) => {
     const newVessels = [...vesselData];
+    const vessel = newVessels[index];
+
+    // Date validation
+    if (field === 'etaDate') {
+        const departureDate = new Date(vessel.departureDate);
+        const newEtaDate = new Date(value as string);
+        if (newEtaDate <= departureDate) {
+            alert("ETA date must be after the departure date.");
+            return;
+        }
+    }
+    if (field === 'departureDate') {
+        const etaDate = new Date(vessel.etaDate);
+        const newDepartureDate = new Date(value as string);
+        if (etaDate <= newDepartureDate) {
+            alert("Departure date must be before the ETA date.");
+            return;
+        }
+    }
+
     (newVessels[index] as any)[field] = value;
     setVesselData(newVessels);
   };
@@ -109,11 +143,41 @@ function VesselAdminDashboard() {
                 </div>
                 <div className="space-y-2">
                   <Label>{t('departurePort')}</Label>
-                  <Input value={vessel.origin} onChange={e => handleVesselChange(index, 'origin', e.target.value)} />
+                  <Select
+                    value={vessel.origin}
+                    onValueChange={value => handleVesselChange(index, 'origin', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a port" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {portNames
+                        .filter(port => port !== vessel.destination)
+                        .map(port => (
+                          <SelectItem key={port} value={port}>{port}</SelectItem>
+                        ))
+                      }
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>{t('destinationPort')}</Label>
-                  <Input value={vessel.destination} onChange={e => handleVesselChange(index, 'destination', e.target.value)} />
+                   <Select
+                    value={vessel.destination}
+                    onValueChange={value => handleVesselChange(index, 'destination', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a port" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {portNames
+                        .filter(port => port !== vessel.origin)
+                        .map(port => (
+                          <SelectItem key={port} value={port}>{port}</SelectItem>
+                        ))
+                      }
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>{t('departureDate')}</Label>
