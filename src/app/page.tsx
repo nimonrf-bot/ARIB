@@ -168,7 +168,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
     <Card className="w-full max-w-sm p-6 bg-white shadow-lg rounded-xl">
       <CardContent className="p-0">
         <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">{warehouse.name}</h2>
-        <div className="flex gap-4">
+        <div className="flex items-stretch gap-4">
           <div className="flex-grow grid grid-cols-2 grid-rows-2 border border-gray-300">
             {warehouse.bins.map((bin, index) => (
               <div key={bin.id} className={cn(`p-3 text-center border-gray-300`,
@@ -183,9 +183,9 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
               </div>
             ))}
           </div>
-          <div className="flex flex-col items-center justify-between w-10">
-            <div className="w-full h-full flex items-end">
-              <Progress value={fillPercentage} className={cn("w-full h-full [&>div]:bg-green-500", { "[&>div]:bg-red-500": isCritical })} orientation="vertical" />
+          <div className="flex flex-col items-center justify-end w-12 text-center">
+            <div className="w-6 h-full flex-grow flex flex-col justify-end">
+                <Progress value={fillPercentage} className={cn("[&>div]:bg-green-500", { "[&>div]:bg-red-500": isCritical })} orientation="vertical" />
             </div>
             <p className="text-sm font-semibold mt-2">{Math.round(fillPercentage)}%</p>
           </div>
