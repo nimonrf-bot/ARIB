@@ -18,6 +18,12 @@ function AdminDashboard() {
     setVesselData(newVessels);
   };
   
+  const handleWarehouseChange = (index: number, field: keyof Warehouse, value: string | number) => {
+    const newWarehouses = [...warehouseData];
+    (newWarehouses[index] as any)[field] = value;
+    setWarehouseData(newWarehouses);
+  };
+  
   const handleWarehouseBinChange = (whIndex: number, binIndex: number, field: keyof Warehouse['bins'][0], value: string | number) => {
     const newWarehouses = [...warehouseData];
     (newWarehouses[whIndex].bins[binIndex] as any)[field] = value;
@@ -62,8 +68,18 @@ function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            {warehouseData.map((warehouse, whIndex) => (
              <Card key={warehouse.id}>
-                <CardHeader><CardTitle>{warehouse.name}</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle>Warehouse {warehouse.id}</CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Warehouse Name</Label>
+                    <Input value={warehouse.name} onChange={e => handleWarehouseChange(whIndex, 'name', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Total Capacity (T)</Label>
+                    <Input type="number" value={warehouse.totalCapacity} onChange={e => handleWarehouseChange(whIndex, 'totalCapacity', parseInt(e.target.value, 10))} />
+                  </div>
                   {warehouse.bins.map((bin, binIndex) => (
                     <div key={bin.id} className="p-4 border rounded-md space-y-2">
                        <h4 className="font-semibold">Bin {bin.id}</h4>

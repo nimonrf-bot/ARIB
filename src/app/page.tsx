@@ -2,6 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { vessels, warehouses, type Vessel, type Warehouse } from "@/lib/data";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+
 
 const ShipIcon = ({ className }: { className?: string }) => (
   <svg
@@ -124,6 +126,8 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
   const currentStock = warehouse.bins.reduce((acc, bin) => acc + bin.tonnage, 0);
   const fillPercentage = (currentStock / warehouse.totalCapacity) * 100;
+  const remainingCapacity = warehouse.totalCapacity - currentStock;
+  const isCritical = fillPercentage > 90;
 
   return (
     <Card className="w-full max-w-lg p-6 bg-white shadow-lg rounded-xl">
@@ -139,21 +143,26 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
               `}>
                 <p className="font-bold text-lg">{bin.id}</p>
                 <p>{bin.commodity}</p>
-                <p className="font-semibold">{bin.tonnage}T</p>
+                <p className="font-semibold">{bin.tonnage.toLocaleString()}T</p>
                 <p className="text-sm text-gray-500">{bin.code}</p>
               </div>
             ))}
           </div>
           <div className="flex flex-col items-center justify-between w-20">
             <div className="w-full h-full flex flex-col justify-end">
-                <Progress value={fillPercentage} className="w-full h-full [&>div]:bg-blue-500" orientation="vertical" />
+                <Progress value={fillPercentage} className={cn("w-full h-full [&>div]:bg-green-500", { "[&>div]:bg-red-500": isCritical })} orientation="vertical" />
             </div>
             <p className="text-sm font-semibold mt-2">{Math.round(fillPercentage)}%</p>
           </div>
         </div>
-        <p className="text-center mt-4 font-bold text-lg">
-          Total Capacity: {warehouse.totalCapacity.toLocaleString()}T
-        </p>
+        <div className="text-center mt-4 space-y-1">
+          <p className="font-bold text-lg">
+            Total Capacity: {warehouse.totalCapacity.toLocaleString()}T
+          </p>
+          <p className={cn("font-semibold", isCritical ? "text-red-600" : "text-green-600")}>
+            {isCritical ? 'Capacity Critical' : 'Available'}: {remainingCapacity.toLocaleString()}T
+          </p>
+        </div>
       </CardContent>
     </Card>
   )
