@@ -10,6 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { vessels as defaultVessels, type Vessel } from '@/lib/data';
 import { useTranslation } from '@/context/language-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { updateVessels } from '@/ai/flows/update-vessels-flow';
+import { Loader } from 'lucide-react';
 
 const portNames = [
   "Arib",
@@ -24,6 +27,8 @@ const portNames = [
 
 function VesselAdminDashboard() {
   const [vesselData, setVesselData] = useState<Vessel[]>(defaultVessels);
+  const [aiUpdateText, setAiUpdateText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -69,9 +74,66 @@ function VesselAdminDashboard() {
     (newVessels[index] as any)[field] = value;
     setVesselData(newVessels);
   };
+  
+  const handleAiUpdate = async () => {
+    if (!aiUpdateText.trim()) {
+      alert('Please paste the update text into the text area first.');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const updatedVessels = await updateVessels(aiUpdateText);
+      
+      const vesselMap = new Map(vesselData.map(v => [v.vesselName.toLowerCase(), v]));
+      
+      const newVesselData = [...vesselData];
+
+      updatedVessels.forEach(updatedVessel => {
+        const existingVessel = vesselMap.get(updatedVessel.vesselName.toLowerCase());
+        if (existingVessel) {
+          const vIndex = newVesselData.findIndex(v => v.id === existingVessel.id);
+          if (vIndex !== -1) {
+            newVesselData[vIndex] = {
+              ...newVesselData[vIndex],
+              ...updatedVessel,
+            };
+          }
+        }
+      });
+
+      setVesselData(newVesselData);
+      alert('Vessel data updated with AI!');
+
+    } catch (error) {
+      console.error('AI update failed:', error);
+      alert('Failed to update with AI. Please check the console for details.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Update with AI</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Paste a text with vessel updates, and the AI will fill in the fields for you. For example: "Omskiy-130 has arrived at Caspian Port, waiting for port entry."
+          </p>
+          <Textarea
+            placeholder="Paste your vessel status update here..."
+            value={aiUpdateText}
+            onChange={(e) => setAiUpdateText(e.target.value)}
+            rows={5}
+          />
+          <Button onClick={handleAiUpdate} disabled={isProcessing}>
+            {isProcessing ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isProcessing ? 'Processing...' : 'Update with AI'}
+          </Button>
+        </CardContent>
+      </Card>
       <div>
         <h2 className="text-2xl font-bold mb-4">{t('updateVesselInfo')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -105,7 +167,7 @@ function VesselAdminDashboard() {
                   <Select value={vessel.destination} onValueChange={(value) => handleVesselChange(index, 'destination', value)}>
                     <SelectTrigger id={`destination-port-${index}`}>
                       <SelectValue placeholder="Select a port" />
-                    </SelectTrigger>
+                    </Trigger>
                     <SelectContent>
                       {portNames.map(port => <SelectItem key={port} value={port}>{port}</SelectItem>)}
                     </SelectContent>
