@@ -5,55 +5,24 @@ import Link from "next/link";
 
 const ShipIcon = ({ className }: { className?: string }) => (
   <svg
-    className={className}
-    width="48"
-    height="48"
-    viewBox="0 0 48 48"
-    fill="none"
     xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 120 60"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
   >
-    <path
-      d="M42 34L37 29L39 27L44 32"
-      stroke="black"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M32 24L27 19L29 17L34 22"
-      stroke="black"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M22 14L17 9L19 7L24 12"
-      stroke="black"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M4 36H44"
-      stroke="black"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M24 10V18"
-      stroke="black"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M20 19L4 40H44L28 19"
-      stroke="black"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <path d="M5 35 H110 L105 45 C103 48 100 50 95 50 H25 C18 50 13 48 10 45 L5 35 Z" />
+    <line x1="10" y1="35" x2="105" y2="35" />
+    <rect x="28" y="25" width="12" height="10" rx="1" />
+    <rect x="42" y="25" width="12" height="10" rx="1" />
+    <rect x="56" y="25" width="12" height="10" rx="1" />
+    <rect x="70" y="25" width="12" height="10" rx="1" />
+    <rect x="84" y="25" width="12" height="10" rx="1" />
+    <path d="M18 35 V18 H30 V35 Z" />
+    <path d="M30 18 L25 12 H18" />
   </svg>
 );
 
