@@ -1,8 +1,11 @@
+'use client';
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { vessels, warehouses, type Vessel, type Warehouse } from "@/lib/data";
+import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel, type Warehouse } from "@/lib/data";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -77,7 +80,7 @@ const PortIcon = ({ className }: { className?: string }) => (
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   return (
-    <Card className="w-full max-w-lg p-4 bg-white shadow-lg rounded-xl">
+    <Card className="w-full p-4 bg-white shadow-lg rounded-xl">
       <CardContent className="p-0">
         <div className="flex justify-between items-start mb-3">
           <div>
@@ -169,6 +172,20 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 }
 
 export default function Home() {
+  const [vessels, setVessels] = useState<Vessel[]>(defaultVessels);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>(defaultWarehouses);
+
+  useEffect(() => {
+    const savedVessels = localStorage.getItem('vessels');
+    if (savedVessels) {
+      setVessels(JSON.parse(savedVessels));
+    }
+    const savedWarehouses = localStorage.getItem('warehouses');
+    if (savedWarehouses) {
+      setWarehouses(JSON.parse(savedWarehouses));
+    }
+  }, []);
+
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
       <div className="w-full max-w-7xl">

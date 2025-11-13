@@ -1,16 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { vessels, warehouses, type Vessel, type Warehouse } from '@/lib/data';
+import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel, type Warehouse } from '@/lib/data';
 
 function AdminDashboard() {
-  // In a real app, you'd save this to a database via a server action.
-  const [vesselData, setVesselData] = useState<Vessel[]>(vessels);
-  const [warehouseData, setWarehouseData] = useState<Warehouse[]>(warehouses);
+  const [vesselData, setVesselData] = useState<Vessel[]>(defaultVessels);
+  const [warehouseData, setWarehouseData] = useState<Warehouse[]>(defaultWarehouses);
+
+  useEffect(() => {
+    const savedVessels = localStorage.getItem('vessels');
+    if (savedVessels) {
+      setVesselData(JSON.parse(savedVessels));
+    }
+    const savedWarehouses = localStorage.getItem('warehouses');
+    if (savedWarehouses) {
+      setWarehouseData(JSON.parse(savedWarehouses));
+    }
+  }, []);
+
+  const handleSaveChanges = () => {
+    localStorage.setItem('vessels', JSON.stringify(vesselData));
+    localStorage.setItem('warehouses', JSON.stringify(warehouseData));
+    alert('Changes saved!');
+  };
 
   const handleVesselChange = (index: number, field: keyof Vessel, value: string | number) => {
     const newVessels = [...vesselData];
@@ -98,7 +114,7 @@ function AdminDashboard() {
            ))}
         </div>
       </div>
-      <Button size="lg" className="w-full">Save Changes</Button>
+      <Button size="lg" className="w-full" onClick={handleSaveChanges}>Save Changes</Button>
     </div>
   );
 }
