@@ -9,6 +9,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Checkbox } from '@/components/ui/checkbox';
 import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel, type Warehouse } from '@/lib/data';
 import { useTranslation } from '@/context/language-context';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const portNames = [
+  "Arib",
+  "Astrakhan",
+  "Makhachkala",
+  "Caspian",
+  "Anzali",
+  "Amirabad",
+  "Noshahr",
+  "Freidunkenar"
+];
 
 function AdminDashboard() {
   const [vesselData, setVesselData] = useState<Vessel[]>(defaultVessels);
@@ -93,11 +105,25 @@ function AdminDashboard() {
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor={`departure-port-${index}`}>{t('departurePort')}</Label>
-                  <Input id={`departure-port-${index}`} value={vessel.origin} onChange={(e) => handleVesselChange(index, 'origin', e.target.value)} />
+                  <Select value={vessel.origin} onValueChange={(value) => handleVesselChange(index, 'origin', value)}>
+                    <SelectTrigger id={`departure-port-${index}`}>
+                      <SelectValue placeholder="Select a port" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {portNames.map(port => <SelectItem key={port} value={port}>{port}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor={`destination-port-${index}`}>{t('destinationPort')}</Label>
-                  <Input id={`destination-port-${index}`} value={vessel.destination} onChange={(e) => handleVesselChange(index, 'destination', e.target.value)} />
+                  <Select value={vessel.destination} onValueChange={(value) => handleVesselChange(index, 'destination', value)}>
+                    <SelectTrigger id={`destination-port-${index}`}>
+                      <SelectValue placeholder="Select a port" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {portNames.map(port => <SelectItem key={port} value={port}>{port}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor={`departure-date-${index}`}>{t('departureDate')}</Label>
