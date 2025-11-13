@@ -57,14 +57,13 @@ const PortIcon = ({ className }: { className?: string }) => (
 );
 
 const WaveIcon = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 1200 60" preserveAspectRatio="none" className={className}>
-        <path
-            d="M0,30 Q300,0 600,30 T1200,30"
-            stroke="currentColor"
-            fill="transparent"
-            strokeWidth="2"
-            strokeLinecap="round"
-        />
+    <svg width="100%" height="20" className={className}>
+      <defs>
+        <pattern id="wave" x="0" y="0" width="40" height="20" patternUnits="userSpaceOnUse">
+          <path d="M0 10 Q 10 0 20 10 T 40 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width="100%" height="100%" fill="url(#wave)" />
     </svg>
 );
 
