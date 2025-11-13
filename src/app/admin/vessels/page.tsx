@@ -61,7 +61,7 @@ function VesselAdminDashboard() {
       if (v.anchored) {
         return { ...v, progress: calculateProgress(v) };
       }
-      return v;
+      return { ...v, progress: calculateProgress(v) };
     });
 
     localStorage.setItem('vessels', JSON.stringify(vesselsToSave));
