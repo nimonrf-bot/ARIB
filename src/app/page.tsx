@@ -135,7 +135,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
         
         <p className="text-sm text-gray-800 mb-4">{vessel.status}</p>
 
-        <div className="relative pt-4 pb-8">
+        <div className="relative pt-12 pb-8">
           <div className="flex justify-between items-center mb-1">
             <p className="text-md font-semibold">{vessel.origin}</p>
             <p className="text-md font-semibold">{vessel.destination}</p>
@@ -147,13 +147,13 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
           </div>
 
           <div
-            className="absolute bottom-6 transform -translate-x-1/2"
+            className="absolute bottom-12 transform -translate-x-1/2"
             style={{ left: `${positionProgress}%` }}
           >
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
                 {vessel.anchored && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1">
                     <Anchor className="w-4 h-4 text-blue-800" />
                   </div>
                 )}
