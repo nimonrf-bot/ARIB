@@ -34,29 +34,6 @@ const ShipIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const FlagIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    width="12"
-    height="12"
-    viewBox="0 0 12 12"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <rect width="12" height="12" rx="2" fill="#0047AB" />
-    <text
-      x="6"
-      y="8.5"
-      textAnchor="middle"
-      fill="white"
-      fontSize="8"
-      fontWeight="bold"
-    >
-      F
-    </text>
-  </svg>
-);
-
 const PortIcon = ({ className }: { className?: string }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -171,7 +148,6 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
                 ) : (
                    <ShipIcon className="w-12 h-12 text-gray-600" />
                 )}
-                <FlagIcon className="absolute -top-1 right-2"/>
               </div>
           </div>
         </div>
