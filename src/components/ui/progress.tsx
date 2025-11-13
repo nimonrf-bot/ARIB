@@ -13,7 +13,7 @@ const Progress = React.forwardRef<
     ref={ref}
     className={cn(
       "relative overflow-hidden rounded-full bg-secondary",
-      orientation === "horizontal" ? "h-4 w-full" : "h-full w-full flex flex-col-reverse",
+      orientation === "horizontal" ? "h-4 w-full" : "h-full w-6",
       className
     )}
     orientation={orientation}
@@ -24,7 +24,7 @@ const Progress = React.forwardRef<
       style={
         orientation === 'horizontal'
           ? { transform: `translateX(-${100 - (value || 0)}%)` }
-          : { height: `${value || 0}%` }
+          : { transform: `translateY(${100 - (value || 0)}%)` }
       }
     />
   </ProgressPrimitive.Root>
