@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { vessels, warehouses, type Vessel, type Warehouse } from "@/lib/data";
+import Link from "next/link";
 
 // Using an inline SVG for the ship icon as it's not in lucide-react.
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -160,9 +161,14 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
       <div className="w-full max-w-7xl">
-        <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">
-          Vessel-Watch
-        </h1>
+        <div className="flex justify-between items-center w-full mb-8">
+            <h1 className="text-3xl font-bold text-gray-800">
+            Vessel-Watch
+            </h1>
+            <Link href="/admin" className="font-medium text-primary hover:underline">
+                Admin Panel
+            </Link>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           {vessels.map((vessel) => (
             <VesselJourneyCard key={vessel.id} vessel={vessel} />
