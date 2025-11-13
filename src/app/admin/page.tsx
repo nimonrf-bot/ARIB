@@ -51,6 +51,13 @@ function AdminDashboard() {
 
 
   const handleSaveChanges = () => {
+    for (const vessel of vesselData) {
+      if (vessel.origin === vessel.destination) {
+        alert(`Error: Departure and destination ports cannot be the same for vessel ${vessel.vesselName}.`);
+        return;
+      }
+    }
+
     // When saving, if a vessel is anchored, we store the current calculated progress.
     // Otherwise, we can just store 0 and let it be calculated live.
     const vesselsToSave = vesselData.map(v => {

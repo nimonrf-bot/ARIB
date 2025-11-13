@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/context/language-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { Anchor } from "lucide-react";
+import { Anchor, ArrowRight } from "lucide-react";
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -153,12 +153,15 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
                 {vessel.anchored && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1">
                     <Anchor className="w-4 h-4 text-blue-800" />
                   </div>
                 )}
               </div>
           </div>
+        </div>
+        <div className="flex justify-center items-center mt-2">
+            <ArrowRight className="w-6 h-6 text-gray-400" />
         </div>
       </CardContent>
     </Card>
