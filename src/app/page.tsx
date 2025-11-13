@@ -3,20 +3,33 @@ import { Progress } from "@/components/ui/progress";
 
 // Using an inline SVG for the ship icon as it's not in lucide-react.
 const ShipIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 64 64"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M12 40h40l-4-16H16z" />
-    <path d="M24 24h16v-8H24z" />
-    <path d="M30 16V8" />
-    <path d="M20 40s-4 8 12 8 12-8 12-8" />
-  </svg>
-);
+    <svg
+      className={className}
+      viewBox="0 0 64 64"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M59.2,46.2H5.8c-1.1,0-2-0.9-2-2V40c0-1.1,0.9-2,2-2h52.4c1.1,0,2,0.9,2,2v4.2C59.2,45.3,58.3,46.2,59.2,46.2z" />
+      <path d="M54.2,38V30" />
+      <path d="M50.2,38V30" />
+      <path d="M46.2,38V30" />
+      <path d="M42.2,38V30" />
+      <path d="M38.2,38V30" />
+      <path d="M34.2,38V30" />
+      <path d="M30.2,38V30" />
+      <path d="M26.2,38V30" />
+      <path d="M22.2,38V30" />
+      <path d="M18.2,38V30" />
+      <path d="M14.2,38V30" />
+      <path d="M20.2,26h-8v-4h8V26z" />
+      <path d="M12.2,30h8" />
+      <path d="M16.2,22V18" />
+    </svg>
+  );
 
 const FlagIcon = ({ className }: { className?: string }) => (
   <svg
