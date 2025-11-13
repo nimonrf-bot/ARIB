@@ -147,13 +147,13 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
           </div>
 
           <div
-            className="absolute bottom-6 transform -translate-x-1/2"
+            className="absolute bottom-10 transform -translate-x-1/2"
             style={{ left: `${positionProgress}%` }}
           >
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
                 {vessel.anchored && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2">
                     <Anchor className="w-4 h-4 text-blue-800" />
                   </div>
                 )}
