@@ -12,7 +12,7 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const translations = { en, ru };
+const translations: Record<Language, { [key: string]: string }> = { en, ru };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
@@ -33,7 +33,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations[Language]] || key;
+    const langTranslations = translations[language];
+    return langTranslations?.[key] || key;
   };
 
   return (
