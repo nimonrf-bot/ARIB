@@ -92,6 +92,14 @@ function AdminDashboard() {
                   <Input id={`cargo-${index}`} value={vessel.cargo} onChange={(e) => handleVesselChange(index, 'cargo', e.target.value)} />
                 </div>
                  <div className="space-y-2">
+                  <Label htmlFor={`departure-port-${index}`}>{t('departurePort')}</Label>
+                  <Input id={`departure-port-${index}`} value={vessel.origin} onChange={(e) => handleVesselChange(index, 'origin', e.target.value)} />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor={`destination-port-${index}`}>{t('destinationPort')}</Label>
+                  <Input id={`destination-port-${index}`} value={vessel.destination} onChange={(e) => handleVesselChange(index, 'destination', e.target.value)} />
+                </div>
+                 <div className="space-y-2">
                   <Label htmlFor={`departure-date-${index}`}>{t('departureDate')}</Label>
                   <Input id={`departure-date-${index}`} type="date" value={vessel.departureDate} onChange={(e) => handleVesselChange(index, 'departureDate', e.target.value)} />
                 </div>
@@ -207,6 +215,9 @@ export default function AdminPage() {
     <main className="container mx-auto p-4 sm:p-8">
       <div className="flex justify-between items-center w-full mb-8">
         <h1 className="text-3xl font-bold">{t('adminPanelTitle')}</h1>
+         <Link href="/" className="text-sm font-medium text-primary hover:underline">
+          {t('statusPageLink')}
+        </Link>
       </div>
       <AdminDashboard />
     </main>

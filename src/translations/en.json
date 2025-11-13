@@ -29,5 +29,7 @@
   "departureDate": "Departure Date",
   "etaDate": "ETA Date",
   "anchored": "Anchored",
-  "statusPageLink": "Status Page"
+  "statusPageLink": "Status Page",
+  "departurePort": "Departure Port",
+  "destinationPort": "Destination Port"
 }
