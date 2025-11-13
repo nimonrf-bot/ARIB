@@ -103,6 +103,9 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   const displayProgress = vessel.anchored ? vessel.progress : progress;
   const etaDate = new Date(vessel.etaDate).toLocaleDateString();
 
+  // Clamp the progress for positioning to avoid icon going off-screen
+  const positionProgress = Math.max(4, Math.min(96, displayProgress));
+
   return (
     <Card className="w-full p-4 bg-white shadow-lg rounded-xl">
       <CardContent className="p-0">
@@ -136,8 +139,8 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
           </div>
 
           <div
-            className="absolute bottom-6 transform -translate-y-1/2"
-            style={{ left: `calc(${displayProgress}% - 24px)` }}
+            className="absolute bottom-6 transform -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${positionProgress}%` }}
           >
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
