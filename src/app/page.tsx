@@ -54,13 +54,13 @@ interface Vessel {
 }
 
 const vessels: Vessel[] = [
-  { id: 1, cargo: "Corn", vesselName: "Astra", vesselId: "OM-128", eta: "25/11/2025", origin: "Astra", destination: "Casp", progress: 40 },
-  { id: 2, cargo: "Wheat", vesselName: "Luna", vesselId: "WX-345", eta: "12/12/2025", origin: "Porto", destination: "Kili", progress: 75 },
-  { id: 3, cargo: "Soybeans", vesselName: "Sol", vesselId: "YZ-987", eta: "05/01/2026", origin: "Baki", destination: "Riva", progress: 20 },
-  { id: 4, cargo: "Barley", vesselName: "Terra", vesselId: "FG-456", eta: "18/02/2026", origin: "Sino", destination: "Luma", progress: 90 },
-  { id: 5, cargo: "Rice", vesselName: "Neptune", vesselId: "AB-213", eta: "30/03/2026", origin: "Gale", destination: "Pira", progress: 50 },
-  { id: 6, cargo: "Canola", vesselName: "Orion", vesselId: "CD-789", eta: "15/04/2026", origin: "Zeph", destination: "Trit", progress: 10 },
-  { id: 7, cargo: "Oats", vesselName: "Sirius", vesselId: "EF-101", eta: "22/05/2026", origin: "Myra", destination: "Neso", progress: 65 },
+  { id: 1, cargo: "Corn", vesselName: "Astra", vesselId: "OM-128", eta: "25/11/2025", origin: "Caspian port", destination: "Arib port", progress: 40 },
+  { id: 2, cargo: "Wheat", vesselName: "Luna", vesselId: "WX-345", eta: "12/12/2025", origin: "Caspian port", destination: "Arib port", progress: 75 },
+  { id: 3, cargo: "Soybeans", vesselName: "Sol", vesselId: "YZ-987", eta: "05/01/2026", origin: "Caspian port", destination: "Arib port", progress: 20 },
+  { id: 4, cargo: "Barley", vesselName: "Terra", vesselId: "FG-456", eta: "18/02/2026", origin: "Caspian port", destination: "Arib port", progress: 90 },
+  { id: 5, cargo: "Rice", vesselName: "Neptune", vesselId: "AB-213", eta: "30/03/2026", origin: "Caspian port", destination: "Arib port", progress: 50 },
+  { id: 6, cargo: "Canola", vesselName: "Orion", vesselId: "CD-789", eta: "15/04/2026", origin: "Caspian port", destination: "Arib port", progress: 10 },
+  { id: 7, cargo: "Oats", vesselName: "Sirius", vesselId: "EF-101", eta: "22/05/2026", origin: "Caspian port", destination: "Arib port", progress: 65 },
 ];
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
