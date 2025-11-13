@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 // Using an inline SVG for the ship icon as it's not in lucide-react.
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -133,6 +134,93 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   );
 };
 
+interface WarehouseBin {
+  id: string;
+  commodity: string;
+  tonnage: number;
+  code: string;
+}
+
+interface Warehouse {
+  id: number;
+  name: string;
+  totalCapacity: number;
+  bins: WarehouseBin[];
+}
+
+const warehouses: Warehouse[] = [
+  {
+    id: 1,
+    name: "Warehouse 9",
+    totalCapacity: 12000,
+    bins: [
+      { id: "9A", commodity: "Corn", tonnage: 2900, code: "AFRA" },
+      { id: "9B", commodity: "Barley", tonnage: 3000, code: "TEHR" },
+      { id: "9C", commodity: "Wheat", tonnage: 1500, code: "KILI" },
+      { id: "9D", commodity: "Soy", tonnage: 2100, code: "RIVA" },
+    ],
+  },
+  {
+    id: 2,
+    name: "Warehouse 7",
+    totalCapacity: 15000,
+    bins: [
+      { id: "7A", commodity: "Rice", tonnage: 4000, code: "SINO" },
+      { id: "7B", commodity: "Canola", tonnage: 3500, code: "LUMA" },
+      { id: "7C", commodity: "Oats", tonnage: 2000, code: "PIRA" },
+      { id: "7D", commodity: "Corn", tonnage: 3000, code: "GALE" },
+    ],
+  },
+  {
+    id: 3,
+    name: "Warehouse 12",
+    totalCapacity: 10000,
+    bins: [
+      { id: "12A", commodity: "Barley", tonnage: 2500, code: "ZEph" },
+      { id: "12B", commodity: "Wheat", tonnage: 2500, code: "TRIT" },
+      { id: "12C", commodity: "Soy", tonnage: 2500, code: "MYRA" },
+      { id: "12D", commodity: "Oats", tonnage: 1500, code: "NESO" },
+    ],
+  },
+];
+
+const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
+  const currentStock = warehouse.bins.reduce((acc, bin) => acc + bin.tonnage, 0);
+  const fillPercentage = (currentStock / warehouse.totalCapacity) * 100;
+
+  return (
+    <Card className="w-full max-w-lg p-6 bg-white shadow-lg rounded-xl">
+      <CardContent className="p-0">
+        <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">{warehouse.name}</h2>
+        <div className="flex gap-4">
+          <div className="flex-grow grid grid-cols-2 grid-rows-2 border border-gray-300">
+            {warehouse.bins.map((bin, index) => (
+              <div key={bin.id} className={`p-3 text-center border-gray-300
+                ${index === 0 ? 'border-r border-b' : ''}
+                ${index === 1 ? 'border-b' : ''}
+                ${index === 2 ? 'border-r' : ''}
+              `}>
+                <p className="font-bold text-lg">{bin.id}</p>
+                <p>{bin.commodity}</p>
+                <p className="font-semibold">{bin.tonnage}T</p>
+                <p className="text-sm text-gray-500">{bin.code}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col items-center justify-between w-20">
+            <div className="w-full h-full flex flex-col justify-end">
+                <Progress value={fillPercentage} className="w-full h-full [&>div]:bg-blue-500" orientation="vertical" />
+            </div>
+            <p className="text-sm font-semibold mt-2">{Math.round(fillPercentage)}%</p>
+          </div>
+        </div>
+        <p className="text-center mt-4 font-bold text-lg">
+          Total Capacity: {warehouse.totalCapacity.toLocaleString()}T
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function Home() {
   return (
@@ -141,9 +229,18 @@ export default function Home() {
         <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">
           Vessel-Watch
         </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           {vessels.map((vessel) => (
             <VesselJourneyCard key={vessel.id} vessel={vessel} />
+          ))}
+        </div>
+
+        <h1 className="text-3xl font-bold my-8 text-center text-gray-800">
+          Warehouse Status
+        </h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+           {warehouses.map((warehouse) => (
+            <WarehouseCard key={warehouse.id} warehouse={warehouse} />
           ))}
         </div>
       </div>
