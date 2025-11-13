@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/context/language-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { Anchor, Ship } from "lucide-react";
+import { Anchor } from "lucide-react";
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -146,7 +146,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
                 <ShipIcon className="w-12 h-12 text-gray-600" />
                 {vessel.anchored && (
                   <div className="absolute top-full left-1/2 -translate-x-1/2 pt-1">
-                    <Anchor className="w-6 h-6 text-blue-800" />
+                    <Anchor className="w-4 h-4 text-blue-800" />
                   </div>
                 )}
               </div>
@@ -162,7 +162,14 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
   const currentStock = warehouse.bins.reduce((acc, bin) => acc + bin.tonnage, 0);
   const fillPercentage = (currentStock / warehouse.totalCapacity) * 100;
   const remainingCapacity = warehouse.totalCapacity - currentStock;
-  const isCritical = fillPercentage > 90;
+  
+  const getCapacityColor = () => {
+    if (fillPercentage > 80) return 'red';
+    if (fillPercentage > 50) return 'yellow';
+    return 'green';
+  };
+  
+  const capacityColor = getCapacityColor();
 
   return (
     <Card className="w-full max-w-sm p-6 bg-white shadow-lg rounded-xl">
@@ -184,8 +191,12 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
             ))}
           </div>
           <div className="flex flex-col items-center justify-end w-12 text-center">
-            <div className="w-6 h-full flex-grow flex flex-col justify-end">
-                <Progress value={fillPercentage} className={cn("[&>div]:bg-green-500", { "[&>div]:bg-red-500": isCritical })} orientation="vertical" />
+            <div className="w-6 h-full flex-grow flex flex-col-reverse">
+                <Progress value={fillPercentage} className={cn(
+                  { "[&>div]:bg-green-500": capacityColor === 'green' },
+                  { "[&>div]:bg-yellow-500": capacityColor === 'yellow' },
+                  { "[&>div]:bg-red-500": capacityColor === 'red' }
+                )} orientation="vertical" />
             </div>
             <p className="text-sm font-semibold mt-2">{Math.round(fillPercentage)}%</p>
           </div>
@@ -194,8 +205,13 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
           <p className="font-bold text-lg">
             {t('totalCapacity')}: {warehouse.totalCapacity.toLocaleString()}T
           </p>
-          <p className={cn("font-semibold", isCritical ? "text-red-600" : "text-green-600")}>
-            {isCritical ? t('capacityCritical') : t('available')}: {remainingCapacity.toLocaleString()}T
+          <p className={cn(
+            "font-semibold", 
+            { 'text-green-600': capacityColor === 'green' },
+            { 'text-yellow-600': capacityColor === 'yellow' },
+            { 'text-red-600': capacityColor === 'red' }
+          )}>
+            {t('available')}: {remainingCapacity.toLocaleString()}T
           </p>
         </div>
       </CardContent>
