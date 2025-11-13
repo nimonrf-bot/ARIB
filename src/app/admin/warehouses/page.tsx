@@ -8,9 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { warehouses as defaultWarehouses, type Warehouse } from '@/lib/data';
 import { useTranslation } from '@/context/language-context';
+import { Textarea } from '@/components/ui/textarea';
+import { updateWarehouses } from '@/ai/flows/update-warehouses-flow';
+import { Loader } from 'lucide-react';
 
 function WarehouseAdminDashboard() {
   const [warehouseData, setWarehouseData] = useState<Warehouse[]>(defaultWarehouses);
+  const [aiUpdateText, setAiUpdateText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -37,8 +42,72 @@ function WarehouseAdminDashboard() {
     setWarehouseData(newWarehouses);
   }
 
+  const handleAiUpdate = async () => {
+    if (!aiUpdateText.trim()) {
+      alert('Please paste the update text into the text area first.');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const updatedWarehouses = await updateWarehouses(aiUpdateText);
+      
+      // Create a map of existing warehouses by name for easy lookup
+      const warehouseMap = new Map(warehouseData.map(wh => [wh.name.toLowerCase(), wh]));
+      
+      const newWarehouseData = [...warehouseData];
+
+      updatedWarehouses.forEach(updatedWh => {
+        const existingWarehouse = warehouseMap.get(updatedWh.name.toLowerCase());
+        if (existingWarehouse) {
+          const whIndex = newWarehouseData.findIndex(wh => wh.id === existingWarehouse.id);
+          if (whIndex !== -1) {
+            // Update existing warehouse
+            newWarehouseData[whIndex] = {
+              ...newWarehouseData[whIndex],
+              ...updatedWh,
+              // Ensure bins are updated correctly, keeping existing IDs
+              bins: newWarehouseData[whIndex].bins.map(existingBin => {
+                const updatedBin = updatedWh.bins.find(ub => ub.id.toLowerCase() === existingBin.id.toLowerCase());
+                return updatedBin ? { ...existingBin, ...updatedBin } : existingBin;
+              })
+            };
+          }
+        }
+      });
+
+      setWarehouseData(newWarehouseData);
+      alert('Warehouse data updated with AI!');
+
+    } catch (error) {
+      console.error('AI update failed:', error);
+      alert('Failed to update with AI. Please check the console for details.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
+       <Card>
+        <CardHeader>
+          <CardTitle>Update with AI</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Paste a text with warehouse updates, and the AI will fill in the fields for you. For example: "Warehouse 9 has 2900T of Corn in bin 9A (code AFRA) and 3000T of Barley in 9B (TEHR)."
+          </p>
+          <Textarea
+            placeholder="Paste your warehouse status update here..."
+            value={aiUpdateText}
+            onChange={(e) => setAiUpdateText(e.target.value)}
+            rows={5}
+          />
+          <Button onClick={handleAiUpdate} disabled={isProcessing}>
+            {isProcessing ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isProcessing ? 'Processing...' : 'Update with AI'}
+          </Button>
+        </CardContent>
+      </Card>
       <div>
         <h2 className="text-2xl font-bold mb-4">{t('updateWarehouseInfo')}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -66,6 +135,10 @@ function WarehouseAdminDashboard() {
                        <div className="space-y-2">
                           <Label>{t('tonnage')}</Label>
                           <Input type="number" value={bin.tonnage} onChange={e => handleWarehouseBinChange(whIndex, binIndex, 'tonnage', parseInt(e.target.value, 10))} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label>Code</Label>
+                          <Input value={bin.code} onChange={e => handleWarehouseBinChange(whIndex, binIndex, 'code', e.target.value)} />
                        </div>
                     </div>
                   ))}
