@@ -81,6 +81,7 @@ const PortIcon = ({ className }: { className?: string }) => (
 );
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
+  const { t } = useTranslation();
   return (
     <Card className="w-full p-4 bg-white shadow-lg rounded-xl">
       <CardContent className="p-0">
@@ -90,11 +91,11 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
               {vessel.vesselName} ({vessel.vesselId})
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              <span className="font-semibold">Cargo:</span> {vessel.cargo}
+              <span className="font-semibold">{t('cargo')}:</span> {vessel.cargo}
             </p>
           </div>
           <div className="text-right">
-             <p className="text-lg text-gray-600">ETA: {vessel.eta}</p>
+             <p className="text-lg text-gray-600">{t('eta')}: {vessel.eta}</p>
           </div>
         </div>
         
@@ -129,6 +130,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 };
 
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
+  const { t } = useTranslation();
   const currentStock = warehouse.bins.reduce((acc, bin) => acc + bin.tonnage, 0);
   const fillPercentage = (currentStock / warehouse.totalCapacity) * 100;
   const remainingCapacity = warehouse.totalCapacity - currentStock;
@@ -162,10 +164,10 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
         </div>
         <div className="text-center mt-4 space-y-1">
           <p className="font-bold text-lg">
-            Total Capacity: {warehouse.totalCapacity.toLocaleString()}T
+            {t('totalCapacity')}: {warehouse.totalCapacity.toLocaleString()}T
           </p>
           <p className={cn("font-semibold", isCritical ? "text-red-600" : "text-green-600")}>
-            {isCritical ? 'Capacity Critical' : 'Available'}: {remainingCapacity.toLocaleString()}T
+            {isCritical ? t('capacityCritical') : t('available')}: {remainingCapacity.toLocaleString()}T
           </p>
         </div>
       </CardContent>

@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel, type Warehouse } from '@/lib/data';
+import { useTranslation } from '@/context/language-context';
 
 function AdminDashboard() {
   const [vesselData, setVesselData] = useState<Vessel[]>(defaultVessels);
   const [warehouseData, setWarehouseData] = useState<Warehouse[]>(defaultWarehouses);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const savedVessels = localStorage.getItem('vessels');
@@ -25,7 +27,7 @@ function AdminDashboard() {
   const handleSaveChanges = () => {
     localStorage.setItem('vessels', JSON.stringify(vesselData));
     localStorage.setItem('warehouses', JSON.stringify(warehouseData));
-    alert('Changes saved!');
+    alert(t('changesSaved'));
   };
 
   const handleVesselChange = (index: number, field: keyof Vessel, value: string | number) => {
@@ -49,7 +51,7 @@ function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold mb-4">Update Vessel Information</h2>
+        <h2 className="text-2xl font-bold mb-4">{t('updateVesselInfo')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {vesselData.map((vessel, index) => (
             <Card key={vessel.id}>
@@ -58,19 +60,19 @@ function AdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`vessel-name-${index}`}>Vessel Name</Label>
+                  <Label htmlFor={`vessel-name-${index}`}>{t('vesselName')}</Label>
                   <Input id={`vessel-name-${index}`} value={vessel.vesselName} onChange={(e) => handleVesselChange(index, 'vesselName', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`cargo-${index}`}>Cargo</Label>
+                  <Label htmlFor={`cargo-${index}`}>{t('cargo')}</Label>
                   <Input id={`cargo-${index}`} value={vessel.cargo} onChange={(e) => handleVesselChange(index, 'cargo', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`status-${index}`}>Status</Label>
+                  <Label htmlFor={`status-${index}`}>{t('status')}</Label>
                   <Input id={`status-${index}`} value={vessel.status} onChange={(e) => handleVesselChange(index, 'status', e.target.value)} />
                 </div>
                  <div className="space-y-2">
-                  <Label htmlFor={`progress-${index}`}>Progress (%)</Label>
+                  <Label htmlFor={`progress-${index}`}>{t('progress')}</Label>
                   <Input id={`progress-${index}`} type="number" value={vessel.progress} onChange={(e) => handleVesselChange(index, 'progress', parseInt(e.target.value, 10))} />
                 </div>
               </CardContent>
@@ -80,31 +82,31 @@ function AdminDashboard() {
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold mb-4">Update Warehouse Information</h2>
+        <h2 className="text-2xl font-bold mb-4">{t('updateWarehouseInfo')}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            {warehouseData.map((warehouse, whIndex) => (
              <Card key={warehouse.id}>
                 <CardHeader>
-                  <CardTitle>Warehouse {warehouse.id}</CardTitle>
+                  <CardTitle>{t('warehouse')} {warehouse.id}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Warehouse Name</Label>
+                    <Label>{t('warehouseName')}</Label>
                     <Input value={warehouse.name} onChange={e => handleWarehouseChange(whIndex, 'name', e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Total Capacity (T)</Label>
+                    <Label>{t('totalCapacityT')}</Label>
                     <Input type="number" value={warehouse.totalCapacity} onChange={e => handleWarehouseChange(whIndex, 'totalCapacity', parseInt(e.target.value, 10))} />
                   </div>
                   {warehouse.bins.map((bin, binIndex) => (
                     <div key={bin.id} className="p-4 border rounded-md space-y-2">
-                       <h4 className="font-semibold">Bin {bin.id}</h4>
+                       <h4 className="font-semibold">{t('bin')} {bin.id}</h4>
                        <div className="space-y-2">
-                          <Label>Commodity</Label>
+                          <Label>{t('commodity')}</Label>
                           <Input value={bin.commodity} onChange={e => handleWarehouseBinChange(whIndex, binIndex, 'commodity', e.target.value)} />
                        </div>
                        <div className="space-y-2">
-                          <Label>Tonnage</Label>
+                          <Label>{t('tonnage')}</Label>
                           <Input type="number" value={bin.tonnage} onChange={e => handleWarehouseBinChange(whIndex, binIndex, 'tonnage', parseInt(e.target.value, 10))} />
                        </div>
                     </div>
@@ -114,7 +116,7 @@ function AdminDashboard() {
            ))}
         </div>
       </div>
-      <Button size="lg" className="w-full" onClick={handleSaveChanges}>Save Changes</Button>
+      <Button size="lg" className="w-full" onClick={handleSaveChanges}>{t('saveChanges')}</Button>
     </div>
   );
 }
@@ -124,6 +126,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { t } = useTranslation();
 
   const handleLogin = () => {
     // In a real application, this would be a secure check against a server.
@@ -131,7 +134,7 @@ export default function AdminPage() {
       setIsAuthenticated(true);
       setError('');
     } else {
-      setError('Incorrect password.');
+      setError(t('incorrectPassword'));
     }
   };
 
@@ -140,11 +143,11 @@ export default function AdminPage() {
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle className="text-2xl">Admin Login</CardTitle>
+            <CardTitle className="text-2xl">{t('adminLogin')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -155,7 +158,7 @@ export default function AdminPage() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button onClick={handleLogin} className="w-full">
-              Login
+              {t('login')}
             </Button>
           </CardContent>
         </Card>
@@ -165,7 +168,7 @@ export default function AdminPage() {
 
   return (
     <main className="container mx-auto p-4 sm:p-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
+      <h1 className="text-3xl font-bold mb-8">{t('adminPanelTitle')}</h1>
       <AdminDashboard />
     </main>
   );

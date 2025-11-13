@@ -2,9 +2,9 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import en from '@/translations/en.json';
-import es from '@/translations/es.json';
+import ru from '@/translations/ru.json';
 
-type Language = 'en' | 'es';
+type Language = 'en' | 'ru';
 
 interface LanguageContextType {
   language: Language;
@@ -12,7 +12,7 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const translations = { en, es };
+const translations = { en, ru };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
@@ -22,7 +22,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     // Check for saved language in localStorage
     const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'es')) {
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
       setLanguage(savedLanguage);
     }
   }, []);
