@@ -3,24 +3,59 @@ import { Progress } from "@/components/ui/progress";
 import { vessels, warehouses, type Vessel, type Warehouse } from "@/lib/data";
 import Link from "next/link";
 
-// Using an inline SVG for the ship icon as it's not in lucide-react.
 const ShipIcon = ({ className }: { className?: string }) => (
-    <svg
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
+  <svg
+    className={className}
+    width="48"
+    height="48"
+    viewBox="0 0 48 48"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M42 34L37 29L39 27L44 32"
+      stroke="black"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-    >
-      <path d="M2 20h20" />
-      <path d="M12 4V9" />
-      <path d="M12 9l-4 11h16L12 9z" />
-      <path d="M10 14h4" />
-    </svg>
-  );
+    />
+    <path
+      d="M32 24L27 19L29 17L34 22"
+      stroke="black"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M22 14L17 9L19 7L24 12"
+      stroke="black"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M4 36H44"
+      stroke="black"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M24 10V18"
+      stroke="black"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M20 19L4 40H44L28 19"
+      stroke="black"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 const FlagIcon = ({ className }: { className?: string }) => (
   <svg
@@ -45,6 +80,14 @@ const FlagIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const PortIcon = ({ className }: { className?: string }) => (
+    <svg className={className} width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="20" r="18" fill="#ORANGE" stroke="black" strokeWidth="2"/>
+        <circle cx="20" cy="20" r="12" fill="white" stroke="black" strokeWidth="2"/>
+        <circle cx="20" cy="20" r="4" fill="black"/>
+    </svg>
+);
+
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   return (
     <Card className="w-full max-w-lg p-6 bg-white shadow-lg rounded-xl">
@@ -62,12 +105,12 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
         <div className="relative pt-8 pb-10">
           <div className="flex items-center justify-between">
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-orange-100 border-2 border-black" />
+              <PortIcon />
               <p className="mt-2 text-lg font-semibold">{vessel.origin}</p>
             </div>
             <div className="flex-grow h-0.5 bg-black mx-4" />
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-orange-100 border-2 border-black" />
+              <PortIcon />
               <p className="mt-2 text-lg font-semibold">{vessel.destination}</p>
             </div>
           </div>
