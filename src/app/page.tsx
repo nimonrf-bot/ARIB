@@ -37,8 +37,8 @@ const ShipIcon = ({ className }: { className?: string }) => (
 const PortIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg"
      width="200" height="200" viewBox="0 0 300 300"
-     fill="none" stroke="currentColor" stroke-width="14"
-     stroke-linecap="round" stroke-linejoin="round"
+     fill="none" stroke="currentColor" strokeWidth="14"
+     strokeLinecap="round" strokeLinejoin="round"
      className={className}>
 
   <path d="M70 250 L70 210 L110 210 L110 250" />
@@ -143,7 +143,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
                 {vessel.anchored && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3">
                     <Anchor className="w-4 h-4 text-blue-800" />
                   </div>
                 )}
@@ -189,7 +189,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
             ))}
           </div>
           <div className="flex flex-col items-center justify-end w-12 text-center">
-            <div className="relative w-6 h-40 bg-gray-200 rounded-full overflow-hidden">
+             <div className="relative w-6 h-40 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
                 <div 
                     className={cn(
                         "absolute bottom-0 w-full transition-all duration-500",
