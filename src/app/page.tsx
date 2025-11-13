@@ -65,9 +65,6 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   useEffect(() => {
     const calculateProgress = () => {
       if (vessel.anchored) {
-        // If anchored, we might want to keep the last known progress,
-        // but for simplicity in this component, we'll just use the stored progress.
-        // A more complex implementation could store the 'anchoredProgress' in the vessel object.
         setProgress(vessel.progress);
         return;
       }
@@ -125,7 +122,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
         
         <p className="text-sm text-gray-800 mb-4">{vessel.status}</p>
 
-        <div className="relative pt-4 pb-2">
+        <div className="relative pt-4 pb-8">
           <div className="flex items-end justify-between">
             <div className="flex items-center gap-2">
               <PortIcon className="w-8 h-8 text-gray-700"/>
@@ -139,14 +136,15 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
           </div>
 
           <div
-            className="absolute bottom-0 transform -translate-y-1/2"
+            className="absolute bottom-6 transform -translate-y-1/2"
             style={{ left: `calc(${displayProgress}% - 24px)` }}
           >
              <div className="relative w-12 h-12">
-                {vessel.anchored ? (
-                   <Anchor className="w-12 h-12 text-blue-800" />
-                ) : (
-                   <ShipIcon className="w-12 h-12 text-gray-600" />
+                <ShipIcon className="w-12 h-12 text-gray-600" />
+                {vessel.anchored && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-1">
+                    <Anchor className="w-6 h-6 text-blue-800" />
+                  </div>
                 )}
               </div>
           </div>
