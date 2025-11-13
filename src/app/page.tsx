@@ -165,17 +165,17 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
   const isCritical = fillPercentage > 90;
 
   return (
-    <Card className="w-full max-w-lg p-6 bg-white shadow-lg rounded-xl">
+    <Card className="w-full max-w-sm p-6 bg-white shadow-lg rounded-xl">
       <CardContent className="p-0">
         <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">{warehouse.name}</h2>
         <div className="flex gap-4">
           <div className="flex-grow grid grid-cols-2 grid-rows-2 border border-gray-300">
             {warehouse.bins.map((bin, index) => (
-              <div key={bin.id} className={`p-3 text-center border-gray-300
-                ${index === 0 ? 'border-r border-b' : ''}
-                ${index === 1 ? 'border-b' : ''}
-                ${index === 2 ? 'border-r' : ''}
-              `}>
+              <div key={bin.id} className={cn(`p-3 text-center border-gray-300`,
+                index === 0 && 'border-r border-b',
+                index === 1 && 'border-b',
+                index === 2 && 'border-r'
+              )}>
                 <p className="font-bold text-lg">{bin.id}</p>
                 <p>{bin.commodity}</p>
                 <p className="font-semibold">{bin.tonnage.toLocaleString()}T</p>
@@ -183,9 +183,9 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
               </div>
             ))}
           </div>
-          <div className="flex flex-col items-center justify-between w-20">
-            <div className="w-full h-full flex flex-col justify-end">
-                <Progress value={fillPercentage} className={cn("w-full h-full [&>div]:bg-green-500", { "[&>div]:bg-red-500": isCritical })} orientation="vertical" />
+          <div className="flex flex-col items-center justify-between w-10">
+            <div className="w-full h-full flex items-end">
+              <Progress value={fillPercentage} className={cn("w-full h-full [&>div]:bg-green-500", { "[&>div]:bg-red-500": isCritical })} orientation="vertical" />
             </div>
             <p className="text-sm font-semibold mt-2">{Math.round(fillPercentage)}%</p>
           </div>
@@ -242,7 +242,7 @@ export default function Home() {
         <h1 className="text-3xl font-bold my-8 text-center text-gray-800">
           {t('warehouseStatusTitle')}
         </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
            {warehouses.map((warehouse) => (
             <WarehouseCard key={warehouse.id} warehouse={warehouse} />
           ))}

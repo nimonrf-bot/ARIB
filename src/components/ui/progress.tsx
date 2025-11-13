@@ -13,7 +13,7 @@ const Progress = React.forwardRef<
     ref={ref}
     className={cn(
       "relative w-full overflow-hidden rounded-full bg-secondary",
-      orientation === "horizontal" ? "h-4" : "h-full w-4 flex-col-reverse",
+      orientation === "horizontal" ? "h-4" : "h-full w-full flex-col-reverse",
       className
     )}
     orientation={orientation}
