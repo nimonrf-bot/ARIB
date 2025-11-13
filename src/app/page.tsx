@@ -6,6 +6,8 @@ import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/context/language-context";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -174,6 +176,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 export default function Home() {
   const [vessels, setVessels] = useState<Vessel[]>(defaultVessels);
   const [warehouses, setWarehouses] = useState<Warehouse[]>(defaultWarehouses);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const savedVessels = localStorage.getItem('vessels');
@@ -191,11 +194,14 @@ export default function Home() {
       <div className="w-full max-w-7xl">
         <div className="flex justify-between items-center w-full mb-8">
             <h1 className="text-3xl font-bold text-gray-800">
-            Vessel-Watch
+             {t('vesselWatchTitle')}
             </h1>
-            <Link href="/admin" className="font-medium text-primary hover:underline">
-                Admin Panel
-            </Link>
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
+              <Link href="/admin" className="font-medium text-primary hover:underline">
+                  {t('adminPanelLink')}
+              </Link>
+            </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           {vessels.map((vessel) => (
@@ -204,7 +210,7 @@ export default function Home() {
         </div>
 
         <h1 className="text-3xl font-bold my-8 text-center text-gray-800">
-          Warehouse Status
+          {t('warehouseStatusTitle')}
         </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
            {warehouses.map((warehouse) => (
