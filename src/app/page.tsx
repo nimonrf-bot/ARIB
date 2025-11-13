@@ -242,7 +242,7 @@ export default function Home() {
       <div className="w-full max-w-7xl">
         <div className="flex justify-between items-center w-full mb-8">
             <h1 className="text-3xl font-bold text-gray-800">
-             {t('vesselWatchTitle')}
+             {t('vesselTrackerTitle')}
             </h1>
             <div className="flex items-center gap-4">
               <LanguageSwitcher />

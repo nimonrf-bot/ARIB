@@ -1,7 +1,7 @@
 {
-  "vesselWatchTitle": "Vessel-Watch",
+  "vesselTrackerTitle": "ARIB Vessel Tracker",
   "adminPanelLink": "Admin Panel",
-  "warehouseStatusTitle": "Warehouse Status",
+  "warehouseStatusTitle": "Arib Warehouse Status",
   "toggleLanguage": "Toggle language",
   "cargo": "Cargo",
   "eta": "ETA",

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel, type Warehouse } from '@/lib/data';
 import { useTranslation } from '@/context/language-context';
@@ -193,6 +193,11 @@ export default function AdminPage() {
               {t('login')}
             </Button>
           </CardContent>
+           <CardFooter className="flex justify-center">
+            <Link href="/" className="text-sm font-medium text-primary hover:underline">
+              {t('statusPageLink')}
+            </Link>
+          </CardFooter>
         </Card>
       </div>
     );
@@ -202,9 +207,6 @@ export default function AdminPage() {
     <main className="container mx-auto p-4 sm:p-8">
       <div className="flex justify-between items-center w-full mb-8">
         <h1 className="text-3xl font-bold">{t('adminPanelTitle')}</h1>
-        <Link href="/" className="font-medium text-primary hover:underline">
-          {t('statusPageLink')}
-        </Link>
       </div>
       <AdminDashboard />
     </main>
