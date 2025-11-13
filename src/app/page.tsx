@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { vessels, warehouses, type Vessel, type Warehouse } from "@/lib/data";
 
 // Using an inline SVG for the ship icon as it's not in lucide-react.
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -42,29 +43,6 @@ const FlagIcon = ({ className }: { className?: string }) => (
     </text>
   </svg>
 );
-
-
-interface Vessel {
-  id: number;
-  cargo: string;
-  vesselName: string;
-  vesselId: string;
-  eta: string;
-  origin: string;
-  destination: string;
-  progress: number;
-  status: string;
-}
-
-const vessels: Vessel[] = [
-  { id: 1, cargo: "N/A", vesselName: "Omskiy-130", vesselId: "OM-130", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 5, status: "Arrived at Caspian Port, waiting for port entry." },
-  { id: 2, cargo: "N/A", vesselName: "Omskiy-131", vesselId: "OM-131", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 30, status: "Waiting for entry into the canal." },
-  { id: 3, cargo: "N/A", vesselName: "Omskiy-86", vesselId: "OM-86", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 15, status: "Completed loading, waiting for fumigation and cargo documents." },
-  { id: 4, cargo: "N/A", vesselName: "Omskiy-128", vesselId: "OM-128", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 5, status: "Arrived at Caspian Port, waiting for port entry." },
-  { id: 5, cargo: "Big Bags", vesselName: "Omskiy-129", vesselId: "OM-129", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 10, status: "Loading at Caspian Port; 1,257 big bags loaded." },
-  { id: 6, cargo: "N/A", vesselName: "Omskiy-89", vesselId: "OM-89", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 30, status: "Waiting for entry into the canal." },
-  { id: 7, cargo: "Cement", vesselName: "Omskiy-136", vesselId: "OM-136", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 10, status: "Arrived at Caspian Port; cement loading begun, 212 big bags loaded." },
-];
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   return (
@@ -139,56 +117,6 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
     </Card>
   );
 };
-
-interface WarehouseBin {
-  id: string;
-  commodity: string;
-  tonnage: number;
-  code: string;
-}
-
-interface Warehouse {
-  id: number;
-  name: string;
-  totalCapacity: number;
-  bins: WarehouseBin[];
-}
-
-const warehouses: Warehouse[] = [
-  {
-    id: 1,
-    name: "Warehouse 9",
-    totalCapacity: 12000,
-    bins: [
-      { id: "9A", commodity: "Corn", tonnage: 2900, code: "AFRA" },
-      { id: "9B", commodity: "Barley", tonnage: 3000, code: "TEHR" },
-      { id: "9C", commodity: "Wheat", tonnage: 1500, code: "KILI" },
-      { id: "9D", commodity: "Soy", tonnage: 2100, code: "RIVA" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Warehouse 7",
-    totalCapacity: 15000,
-    bins: [
-      { id: "7A", commodity: "Rice", tonnage: 4000, code: "SINO" },
-      { id: "7B", commodity: "Canola", tonnage: 3500, code: "LUMA" },
-      { id: "7C", commodity: "Oats", tonnage: 2000, code: "PIRA" },
-      { id: "7D", commodity: "Corn", tonnage: 3000, code: "GALE" },
-    ],
-  },
-  {
-    id: 3,
-    name: "Warehouse 12",
-    totalCapacity: 10000,
-    bins: [
-      { id: "12A", commodity: "Barley", tonnage: 2500, code: "ZEph" },
-      { id: "12B", commodity: "Wheat", tonnage: 2500, code: "TRIT" },
-      { id: "12C", commodity: "Soy", tonnage: 2500, code: "MYRA" },
-      { id: "12D", commodity: "Oats", tonnage: 1500, code: "NESO" },
-    ],
-  },
-];
 
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
   const currentStock = warehouse.bins.reduce((acc, bin) => acc + bin.tonnage, 0);
