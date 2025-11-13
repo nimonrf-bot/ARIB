@@ -75,72 +75,46 @@ const PortIcon = ({ className }: { className?: string }) => (
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   return (
-    <Card className="w-full max-w-lg p-6 bg-white shadow-lg rounded-xl">
+    <Card className="w-full max-w-lg p-4 bg-white shadow-lg rounded-xl">
       <CardContent className="p-0">
-        <div className="flex justify-between items-start mb-4">
-            <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                    Cargo: {vessel.cargo}
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">{vessel.status}</p>
-            </div>
-          <p className="text-lg text-gray-600">ETA: {vessel.eta}</p>
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">
+              {vessel.vesselName} ({vessel.vesselId})
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              <span className="font-semibold">Cargo:</span> {vessel.cargo}
+            </p>
+          </div>
+          <div className="text-right">
+             <p className="text-lg text-gray-600">ETA: {vessel.eta}</p>
+          </div>
         </div>
+        
+        <p className="text-sm text-gray-800 mb-4">{vessel.status}</p>
 
-        <div className="relative pt-8 pb-10">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col items-center">
-              <PortIcon className="w-10 h-10 text-gray-700"/>
-              <p className="mt-2 text-lg font-semibold">{vessel.origin}</p>
+        <div className="relative pt-4 pb-2">
+          <div className="flex items-end justify-between">
+            <div className="flex items-center gap-2">
+              <PortIcon className="w-8 h-8 text-gray-700"/>
+              <p className="text-md font-semibold">{vessel.origin}</p>
             </div>
-            <div className="flex-grow h-0.5 bg-black mx-4" />
-            <div className="flex flex-col items-center">
-              <PortIcon className="w-10 h-10 text-gray-700"/>
-              <p className="mt-2 text-lg font-semibold">{vessel.destination}</p>
+            <div className="flex-grow h-0.5 bg-black mx-4 mb-4" />
+            <div className="flex items-center gap-2">
+              <p className="text-md font-semibold">{vessel.destination}</p>
+              <PortIcon className="w-8 h-8 text-gray-700"/>
             </div>
           </div>
 
           <div
-            className="absolute bottom-6 transform -translate-y-1/2"
+            className="absolute bottom-0 transform -translate-y-1/2"
             style={{ left: `calc(${vessel.progress}% - 24px)` }}
           >
-            <div className="flex flex-col items-center">
-              <div className="relative">
+             <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
                 <FlagIcon className="absolute -top-1 right-2"/>
               </div>
-              <p className="mt-1 text-sm font-medium text-gray-700">
-                {vessel.vesselId}
-              </p>
-              <div className="absolute top-8 left-1/2 -translate-x-1/2">
-                <svg
-                  width="20"
-                  height="10"
-                  viewBox="0 0 20 10"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M1 5H19"
-                    stroke="black"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M14 1L19 5L14 9"
-                    stroke="black"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            </div>
           </div>
-        </div>
-        <div className="text-center">
-            <p className="text-xl font-bold text-gray-800">{vessel.vesselName}</p>
         </div>
       </CardContent>
     </Card>
