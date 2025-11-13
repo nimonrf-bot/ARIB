@@ -5,29 +5,18 @@ import { Progress } from "@/components/ui/progress";
 const ShipIcon = ({ className }: { className?: string }) => (
     <svg
       className={className}
-      viewBox="0 0 64 64"
       xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d="M59.2,46.2H5.8c-1.1,0-2-0.9-2-2V40c0-1.1,0.9-2,2-2h52.4c1.1,0,2,0.9,2,2v4.2C59.2,45.3,58.3,46.2,59.2,46.2z" />
-      <path d="M54.2,38V30" />
-      <path d="M50.2,38V30" />
-      <path d="M46.2,38V30" />
-      <path d="M42.2,38V30" />
-      <path d="M38.2,38V30" />
-      <path d="M34.2,38V30" />
-      <path d="M30.2,38V30" />
-      <path d="M26.2,38V30" />
-      <path d="M22.2,38V30" />
-      <path d="M18.2,38V30" />
-      <path d="M14.2,38V30" />
-      <path d="M20.2,26h-8v-4h8V26z" />
-      <path d="M12.2,30h8" />
-      <path d="M16.2,22V18" />
+      <path d="M2 20h20" />
+      <path d="M12 4V9" />
+      <path d="M12 9l-4 11h16L12 9z" />
+      <path d="M10 14h4" />
     </svg>
   );
 
@@ -64,26 +53,30 @@ interface Vessel {
   origin: string;
   destination: string;
   progress: number;
+  status: string;
 }
 
 const vessels: Vessel[] = [
-  { id: 1, cargo: "Corn", vesselName: "Astra", vesselId: "OM-128", eta: "25/11/2025", origin: "Caspian port", destination: "Arib port", progress: 40 },
-  { id: 2, cargo: "Wheat", vesselName: "Luna", vesselId: "WX-345", eta: "12/12/2025", origin: "Caspian port", destination: "Arib port", progress: 75 },
-  { id: 3, cargo: "Soybeans", vesselName: "Sol", vesselId: "YZ-987", eta: "05/01/2026", origin: "Caspian port", destination: "Arib port", progress: 20 },
-  { id: 4, cargo: "Barley", vesselName: "Terra", vesselId: "FG-456", eta: "18/02/2026", origin: "Caspian port", destination: "Arib port", progress: 90 },
-  { id: 5, cargo: "Rice", vesselName: "Neptune", vesselId: "AB-213", eta: "30/03/2026", origin: "Caspian port", destination: "Arib port", progress: 50 },
-  { id: 6, cargo: "Canola", vesselName: "Orion", vesselId: "CD-789", eta: "15/04/2026", origin: "Caspian port", destination: "Arib port", progress: 10 },
-  { id: 7, cargo: "Oats", vesselName: "Sirius", vesselId: "EF-101", eta: "22/05/2026", origin: "Caspian port", destination: "Arib port", progress: 65 },
+  { id: 1, cargo: "N/A", vesselName: "Omskiy-130", vesselId: "OM-130", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 5, status: "Arrived at Caspian Port, waiting for port entry." },
+  { id: 2, cargo: "N/A", vesselName: "Omskiy-131", vesselId: "OM-131", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 30, status: "Waiting for entry into the canal." },
+  { id: 3, cargo: "N/A", vesselName: "Omskiy-86", vesselId: "OM-86", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 15, status: "Completed loading, waiting for fumigation and cargo documents." },
+  { id: 4, cargo: "N/A", vesselName: "Omskiy-128", vesselId: "OM-128", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 5, status: "Arrived at Caspian Port, waiting for port entry." },
+  { id: 5, cargo: "Big Bags", vesselName: "Omskiy-129", vesselId: "OM-129", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 10, status: "Loading at Caspian Port; 1,257 big bags loaded." },
+  { id: 6, cargo: "N/A", vesselName: "Omskiy-89", vesselId: "OM-89", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 30, status: "Waiting for entry into the canal." },
+  { id: 7, cargo: "Cement", vesselName: "Omskiy-136", vesselId: "OM-136", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 10, status: "Arrived at Caspian Port; cement loading begun, 212 big bags loaded." },
 ];
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   return (
     <Card className="w-full max-w-lg p-6 bg-white shadow-lg rounded-xl">
       <CardContent className="p-0">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            Cargo: {vessel.cargo}
-          </h2>
+        <div className="flex justify-between items-start mb-4">
+            <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                    Cargo: {vessel.cargo}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">{vessel.status}</p>
+            </div>
           <p className="text-lg text-gray-600">ETA: {vessel.eta}</p>
         </div>
 
