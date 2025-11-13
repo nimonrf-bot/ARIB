@@ -114,7 +114,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   const etaDate = new Date(vessel.etaDate).toLocaleDateString();
 
   // Clamp the progress for positioning to avoid icon going off-screen
-  const positionProgress = Math.max(4, Math.min(96, displayProgress));
+  const positionProgress = Math.max(5, Math.min(95, displayProgress));
 
   return (
     <Card className="w-full p-4 bg-white shadow-lg rounded-xl">
@@ -136,20 +136,18 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
         <p className="text-sm text-gray-800 mb-4">{vessel.status}</p>
 
         <div className="relative pt-4 pb-8">
+          <div className="flex justify-between items-center mb-1">
+            <p className="text-md font-semibold">{vessel.origin}</p>
+            <p className="text-md font-semibold">{vessel.destination}</p>
+          </div>
           <div className="flex items-end justify-between">
-            <div className="flex items-center gap-2">
-              <PortIcon className="w-8 h-8 text-gray-700"/>
-              <p className="text-md font-semibold">{vessel.origin}</p>
-            </div>
-             <WaveIcon className="flex-grow text-black mx-4 mb-4 h-5" />
-            <div className="flex items-center gap-2">
-              <p className="text-md font-semibold">{vessel.destination}</p>
-              <PortIcon className="w-8 h-8 text-gray-700"/>
-            </div>
+            <PortIcon className="w-8 h-8 text-gray-700"/>
+            <WaveIcon className="flex-grow text-black mx-2 h-5" />
+            <PortIcon className="w-8 h-8 text-gray-700"/>
           </div>
 
           <div
-            className="absolute bottom-6 transform -translate-x-1/2 -translate-y-1/2"
+            className="absolute bottom-6 transform -translate-x-1/2"
             style={{ left: `${positionProgress}%` }}
           >
              <div className="relative w-12 h-12">
