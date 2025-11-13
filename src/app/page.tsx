@@ -147,7 +147,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
           </div>
 
           <div
-            className="absolute bottom-4 transform -translate-x-1/2"
+            className="absolute bottom-6 transform -translate-x-1/2"
             style={{ left: `${positionProgress}%` }}
           >
              <div className="relative w-12 h-12">
