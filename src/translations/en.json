@@ -28,5 +28,6 @@
   "adminPanelTitle": "Admin Panel",
   "departureDate": "Departure Date",
   "etaDate": "ETA Date",
-  "anchored": "Anchored"
+  "anchored": "Anchored",
+  "statusPageLink": "Status Page"
 }

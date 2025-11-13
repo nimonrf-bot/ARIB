@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -199,7 +200,12 @@ export default function AdminPage() {
 
   return (
     <main className="container mx-auto p-4 sm:p-8">
-      <h1 className="text-3xl font-bold mb-8">{t('adminPanelTitle')}</h1>
+      <div className="flex justify-between items-center w-full mb-8">
+        <h1 className="text-3xl font-bold">{t('adminPanelTitle')}</h1>
+        <Link href="/" className="font-medium text-primary hover:underline">
+          {t('statusPageLink')}
+        </Link>
+      </div>
       <AdminDashboard />
     </main>
   );
