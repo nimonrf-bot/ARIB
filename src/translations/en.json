@@ -25,5 +25,8 @@
   "password": "Password",
   "incorrectPassword": "Incorrect password.",
   "login": "Login",
-  "adminPanelTitle": "Admin Panel"
+  "adminPanelTitle": "Admin Panel",
+  "departureDate": "Departure Date",
+  "etaDate": "ETA Date",
+  "anchored": "Anchored"
 }

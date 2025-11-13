@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/context/language-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { Anchor, Ship } from "lucide-react";
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -82,6 +83,52 @@ const PortIcon = ({ className }: { className?: string }) => (
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   const { t } = useTranslation();
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const calculateProgress = () => {
+      if (vessel.anchored) {
+        // If anchored, we might want to keep the last known progress,
+        // but for simplicity in this component, we'll just use the stored progress.
+        // A more complex implementation could store the 'anchoredProgress' in the vessel object.
+        setProgress(vessel.progress);
+        return;
+      }
+      
+      const now = new Date();
+      const start = new Date(vessel.departureDate);
+      const end = new Date(vessel.etaDate);
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+        setProgress(0);
+        return;
+      }
+      
+      if (now >= end) {
+        setProgress(100);
+        return;
+      }
+      if (now <= start) {
+        setProgress(0);
+        return;
+      }
+
+      const totalDuration = end.getTime() - start.getTime();
+      const elapsedDuration = now.getTime() - start.getTime();
+      const calculatedProgress = Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
+      
+      setProgress(calculatedProgress);
+    };
+
+    calculateProgress();
+    const interval = setInterval(calculateProgress, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [vessel]);
+
+  const displayProgress = vessel.anchored ? vessel.progress : progress;
+  const etaDate = new Date(vessel.etaDate).toLocaleDateString();
+
   return (
     <Card className="w-full p-4 bg-white shadow-lg rounded-xl">
       <CardContent className="p-0">
@@ -95,7 +142,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
             </p>
           </div>
           <div className="text-right">
-             <p className="text-lg text-gray-600">{t('eta')}: {vessel.eta}</p>
+             <p className="text-lg text-gray-600">{t('eta')}: {etaDate}</p>
           </div>
         </div>
         
@@ -116,10 +163,14 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 
           <div
             className="absolute bottom-0 transform -translate-y-1/2"
-            style={{ left: `calc(${vessel.progress}% - 24px)` }}
+            style={{ left: `calc(${displayProgress}% - 24px)` }}
           >
              <div className="relative w-12 h-12">
-                <ShipIcon className="w-12 h-12 text-gray-600" />
+                {vessel.anchored ? (
+                   <Anchor className="w-12 h-12 text-blue-800" />
+                ) : (
+                   <ShipIcon className="w-12 h-12 text-gray-600" />
+                )}
                 <FlagIcon className="absolute -top-1 right-2"/>
               </div>
           </div>

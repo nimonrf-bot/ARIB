@@ -6,10 +6,12 @@ export interface Vessel {
   cargo: string;
   vesselName: string;
   vesselId: string;
-  eta: string;
+  departureDate: string;
+  etaDate: string;
+  anchored: boolean;
   origin: string;
   destination: string;
-  progress: number;
+  progress: number; // Will be calculated dynamically
   status: string;
 }
 
@@ -27,14 +29,27 @@ export interface Warehouse {
   bins: WarehouseBin[];
 }
 
+const today = new Date();
+const getFutureDate = (days: number) => {
+    const date = new Date();
+    date.setDate(today.getDate() + days);
+    return date.toISOString().split('T')[0];
+}
+const getPastDate = (days: number) => {
+    const date = new Date();
+    date.setDate(today.getDate() - days);
+    return date.toISOString().split('T')[0];
+}
+
+
 export const vessels: Vessel[] = [
-    { id: 1, cargo: "N/A", vesselName: "Omskiy-130", vesselId: "OM-130", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 5, status: "Arrived at Caspian Port, waiting for port entry." },
-    { id: 2, cargo: "N/A", vesselName: "Omskiy-131", vesselId: "OM-131", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 30, status: "Waiting for entry into the canal." },
-    { id: 3, cargo: "N/A", vesselName: "Omskiy-86", vesselId: "OM-86", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 15, status: "Completed loading, waiting for fumigation and cargo documents." },
-    { id: 4, cargo: "N/A", vesselName: "Omskiy-128", vesselId: "OM-128", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 5, status: "Arrived at Caspian Port, waiting for port entry." },
-    { id: 5, cargo: "Big Bags", vesselName: "Omskiy-129", vesselId: "OM-129", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 10, status: "Loading at Caspian Port; 1,257 big bags loaded." },
-    { id: 6, cargo: "N/A", vesselName: "Omskiy-89", vesselId: "OM-89", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 30, status: "Waiting for entry into the canal." },
-    { id: 7, cargo: "Cement", vesselName: "Omskiy-136", vesselId: "OM-136", eta: "TBD", origin: "Caspian port", destination: "Arib port", progress: 10, status: "Arrived at Caspian Port; cement loading begun, 212 big bags loaded." },
+    { id: 1, cargo: "N/A", vesselName: "Omskiy-130", vesselId: "OM-130", departureDate: getPastDate(2), etaDate: getFutureDate(10), anchored: true, origin: "Caspian port", destination: "Arib port", progress: 0, status: "Arrived at Caspian Port, waiting for port entry." },
+    { id: 2, cargo: "N/A", vesselName: "Omskiy-131", vesselId: "OM-131", departureDate: getPastDate(5), etaDate: getFutureDate(8), anchored: false, origin: "Caspian port", destination: "Arib port", progress: 0, status: "Waiting for entry into the canal." },
+    { id: 3, cargo: "N/A", vesselName: "Omskiy-86", vesselId: "OM-86", departureDate: getPastDate(3), etaDate: getFutureDate(12), anchored: true, origin: "Caspian port", destination: "Arib port", progress: 0, status: "Completed loading, waiting for fumigation and cargo documents." },
+    { id: 4, cargo: "N/A", vesselName: "Omskiy-128", vesselId: "OM-128", departureDate: getPastDate(1), etaDate: getFutureDate(14), anchored: true, origin: "Caspian port", destination: "Arib port", progress: 0, status: "Arrived at Caspian Port, waiting for port entry." },
+    { id: 5, cargo: "Big Bags", vesselName: "Omskiy-129", vesselId: "OM-129", departureDate: getPastDate(4), etaDate: getFutureDate(9), anchored: false, origin: "Caspian port", destination: "Arib port", progress: 0, status: "Loading at Caspian Port; 1,257 big bags loaded." },
+    { id: 6, cargo: "N/A", vesselName: "Omskiy-89", vesselId: "OM-89", departureDate: getPastDate(6), etaDate: getFutureDate(7), anchored: false, origin: "Caspian port", destination: "Arib port", progress: 0, status: "Waiting for entry into the canal." },
+    { id: 7, cargo: "Cement", vesselName: "Omskiy-136", vesselId: "OM-136", departureDate: getPastDate(2), etaDate: getFutureDate(11), anchored: false, origin: "Caspian port", destination: "Arib port", progress: 0, status: "Arrived at Caspian Port; cement loading begun, 212 big bags loaded." },
 ];
 
 export const warehouses: Warehouse[] = [

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel, type Warehouse } from '@/lib/data';
 import { useTranslation } from '@/context/language-context';
 
@@ -24,13 +25,35 @@ function AdminDashboard() {
     }
   }, []);
 
+  const calculateProgress = (vessel: Vessel) => {
+    const now = new Date();
+    const start = new Date(vessel.departureDate);
+    const end = new Date(vessel.etaDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start || now <= start) return 0;
+    if (now >= end) return 100;
+    const totalDuration = end.getTime() - start.getTime();
+    const elapsedDuration = now.getTime() - start.getTime();
+    return Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
+  };
+
+
   const handleSaveChanges = () => {
-    localStorage.setItem('vessels', JSON.stringify(vesselData));
+    // When saving, if a vessel is anchored, we store the current calculated progress.
+    // Otherwise, we can just store 0 and let it be calculated live.
+    const vesselsToSave = vesselData.map(v => {
+      if (v.anchored) {
+        return { ...v, progress: calculateProgress(v) };
+      }
+      return v;
+    });
+
+    localStorage.setItem('vessels', JSON.stringify(vesselsToSave));
     localStorage.setItem('warehouses', JSON.stringify(warehouseData));
+    setVesselData(vesselsToSave); // Update state to reflect saved progress
     alert(t('changesSaved'));
   };
 
-  const handleVesselChange = (index: number, field: keyof Vessel, value: string | number) => {
+  const handleVesselChange = (index: number, field: keyof Vessel, value: string | number | boolean) => {
     const newVessels = [...vesselData];
     (newVessels[index] as any)[field] = value;
     setVesselData(newVessels);
@@ -67,13 +90,21 @@ function AdminDashboard() {
                   <Label htmlFor={`cargo-${index}`}>{t('cargo')}</Label>
                   <Input id={`cargo-${index}`} value={vessel.cargo} onChange={(e) => handleVesselChange(index, 'cargo', e.target.value)} />
                 </div>
+                 <div className="space-y-2">
+                  <Label htmlFor={`departure-date-${index}`}>{t('departureDate')}</Label>
+                  <Input id={`departure-date-${index}`} type="date" value={vessel.departureDate} onChange={(e) => handleVesselChange(index, 'departureDate', e.target.value)} />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor={`eta-date-${index}`}>{t('etaDate')}</Label>
+                  <Input id={`eta-date-${index}`} type="date" value={vessel.etaDate} onChange={(e) => handleVesselChange(index, 'etaDate', e.target.value)} />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id={`anchored-${index}`} checked={vessel.anchored} onCheckedChange={(checked) => handleVesselChange(index, 'anchored', !!checked)} />
+                  <Label htmlFor={`anchored-${index}`}>{t('anchored')}</Label>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor={`status-${index}`}>{t('status')}</Label>
                   <Input id={`status-${index}`} value={vessel.status} onChange={(e) => handleVesselChange(index, 'status', e.target.value)} />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor={`progress-${index}`}>{t('progress')}</Label>
-                  <Input id={`progress-${index}`} type="number" value={vessel.progress} onChange={(e) => handleVesselChange(index, 'progress', parseInt(e.target.value, 10))} />
                 </div>
               </CardContent>
             </Card>
