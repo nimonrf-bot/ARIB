@@ -35,27 +35,25 @@ const ShipIcon = ({ className }: { className?: string }) => (
 );
 
 const PortIcon = ({ className }: { className?: string }) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 300 300"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="14"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M70 250 L70 210 L110 210 L110 250" />
-      <path d="M190 250 L190 210 L230 210 L230 250" />
-      <rect x="70" y="180" width="160" height="30" rx="4" />
-      <rect x="90" y="150" width="120" height="30" rx="4" />
-      <rect x="100" y="120" width="100" height="30" rx="4" />
-      <rect x="110" y="90" width="80" height="30" rx="4" />
-      <path d="M140 90 L260 40" />
-      <path d="M180 90 L260 40" />
-      <line x1="260" y1="40" x2="260" y2="120" />
-      <circle cx="260" cy="145" r="5" fill="black" />
-    </svg>
+  <svg xmlns="http://www.w3.org/2000/svg"
+     width="200" height="200" viewBox="0 0 300 300"
+     fill="none" stroke="currentColor" stroke-width="14"
+     stroke-linecap="round" stroke-linejoin="round"
+     className={className}>
+
+  <path d="M70 250 L70 210 L110 210 L110 250" />
+  <path d="M190 250 L190 210 L230 210 L230 250" />
+
+  <rect x="70" y="180" width="160" height="30" rx="4" />
+  <rect x="90" y="150" width="120" height="30" rx="4" />
+  <rect x="100" y="120" width="100" height="30" rx="4" />
+  <rect x="110" y="90" width="80" height="30" rx="4" />
+
+  <path d="M140 90 L260 40" />
+  <path d="M180 90 L260 40" />
+  <line x1="260" y1="40" x2="260" y2="120" />
+  <circle cx="260" cy="145" r="5" fill="currentColor" />
+</svg>
 );
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
@@ -145,7 +143,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
                 {vessel.anchored && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-1">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2">
                     <Anchor className="w-4 h-4 text-blue-800" />
                   </div>
                 )}
@@ -191,12 +189,16 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
             ))}
           </div>
           <div className="flex flex-col items-center justify-end w-12 text-center">
-            <div className="w-6 h-full flex-grow flex flex-col-reverse">
-                <Progress value={fillPercentage} className={cn(
-                  { "[&>div]:bg-green-500": capacityColor === 'green' },
-                  { "[&>div]:bg-yellow-500": capacityColor === 'yellow' },
-                  { "[&>div]:bg-red-500": capacityColor === 'red' }
-                )} orientation="vertical" />
+            <div className="relative w-6 h-40 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                    className={cn(
+                        "absolute bottom-0 w-full transition-all duration-500",
+                        { "bg-green-500": capacityColor === 'green' },
+                        { "bg-yellow-500": capacityColor === 'yellow' },
+                        { "bg-red-500": capacityColor === 'red' }
+                    )} 
+                    style={{ height: `${fillPercentage}%`}}
+                ></div>
             </div>
             <p className="text-sm font-semibold mt-2">{Math.round(fillPercentage)}%</p>
           </div>
