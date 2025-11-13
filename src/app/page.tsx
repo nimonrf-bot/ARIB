@@ -56,6 +56,19 @@ const PortIcon = ({ className }: { className?: string }) => (
 </svg>
 );
 
+const WaveIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 1200 60" preserveAspectRatio="none" className={className}>
+        <path
+            d="M0,30 Q300,0 600,30 T1200,30"
+            stroke="currentColor"
+            fill="transparent"
+            strokeWidth="2"
+            strokeLinecap="round"
+        />
+    </svg>
+);
+
+
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
@@ -129,7 +142,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
               <PortIcon className="w-8 h-8 text-gray-700"/>
               <p className="text-md font-semibold">{vessel.origin}</p>
             </div>
-            <div className="flex-grow h-0.5 bg-black mx-4 mb-4" />
+             <WaveIcon className="flex-grow text-black mx-4 mb-4 h-5" />
             <div className="flex items-center gap-2">
               <p className="text-md font-semibold">{vessel.destination}</p>
               <PortIcon className="w-8 h-8 text-gray-700"/>
@@ -143,7 +156,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
                 {vessel.anchored && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4">
                     <Anchor className="w-4 h-4 text-blue-800" />
                   </div>
                 )}
@@ -189,7 +202,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
             ))}
           </div>
           <div className="flex flex-col items-center justify-end w-12 text-center">
-             <div className="relative w-6 h-40 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
+             <div className="relative w-2 h-40 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
                 <div 
                     className={cn(
                         "absolute bottom-0 w-full transition-all duration-500",
