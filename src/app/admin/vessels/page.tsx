@@ -49,6 +49,11 @@ function VesselAdminDashboard() {
     return Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
   };
 
+  const handleVesselChange = (index: number, field: keyof Vessel, value: string | number | boolean) => {
+    const newVessels = [...vesselData];
+    (newVessels[index] as any)[field] = value;
+    setVesselData(newVessels);
+  };
 
   const handleSaveChanges = () => {
     for (const vessel of vesselData) {
@@ -57,22 +62,14 @@ function VesselAdminDashboard() {
         return;
       }
     }
-    const vesselsToSave = vesselData.map(v => {
-      if (v.anchored) {
-        return { ...v, progress: calculateProgress(v) };
-      }
-      return { ...v, progress: calculateProgress(v) };
-    });
+    const vesselsToSave = vesselData.map(v => ({
+      ...v,
+      progress: calculateProgress(v)
+    }));
 
     localStorage.setItem('vessels', JSON.stringify(vesselsToSave));
     setVesselData(vesselsToSave);
     alert(t('changesSaved'));
-  };
-
-  const handleVesselChange = (index: number, field: keyof Vessel, value: string | number | boolean) => {
-    const newVessels = [...vesselData];
-    (newVessels[index] as any)[field] = value;
-    setVesselData(newVessels);
   };
   
   const handleAiUpdate = async () => {
