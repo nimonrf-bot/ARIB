@@ -85,13 +85,14 @@ function VesselAdminDashboard() {
     
     const changes: string[] = [];
 
-    vesselData.forEach((newVessel, index) => {
+    vesselData.forEach((newVessel) => {
       const oldVessel = oldVesselData.find(v => v.id === newVessel.id);
       if (oldVessel) {
-        Object.keys(newVessel).forEach(key => {
-          const field = key as keyof Vessel;
-          if (newVessel[field] !== oldVessel[field]) {
-            changes.push(`Vessel '${newVessel.vesselName}': ${field} updated.`);
+        (Object.keys(newVessel) as Array<keyof Vessel>).forEach(field => {
+          const oldValue = oldVessel[field];
+          const newValue = newVessel[field];
+          if (String(newValue) !== String(oldValue)) {
+            changes.push(`Vessel '${newVessel.vesselName}': ${field} changed from '${oldValue}' to '${newValue}'.`);
           }
         });
       }
@@ -331,5 +332,3 @@ export default function VesAdmPage() {
     </main>
   );
 }
-
-    

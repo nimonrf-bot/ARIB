@@ -50,20 +50,21 @@ function WarehouseAdminDashboard() {
       if (oldWarehouse) {
         // Check warehouse-level fields
         if (newWarehouse.name !== oldWarehouse.name) {
-          changes.push(`Warehouse '${oldWarehouse.name}' -> '${newWarehouse.name}': Name updated.`);
+          changes.push(`Warehouse '${oldWarehouse.name}' -> '${newWarehouse.name}': Name changed from '${oldWarehouse.name}' to '${newWarehouse.name}'.`);
         }
         if (newWarehouse.totalCapacity !== oldWarehouse.totalCapacity) {
-          changes.push(`Warehouse '${newWarehouse.name}': Total capacity updated.`);
+          changes.push(`Warehouse '${newWarehouse.name}': Total capacity changed from '${oldWarehouse.totalCapacity}' to '${newWarehouse.totalCapacity}'.`);
         }
         
         // Check bin-level fields
         newWarehouse.bins.forEach((newBin) => {
           const oldBin = oldWarehouse.bins.find(b => b.id === newBin.id);
           if (oldBin) {
-             Object.keys(newBin).forEach(key => {
-                const field = key as keyof WarehouseBin;
-                if (field !== 'id' && newBin[field] !== oldBin[field]) {
-                    changes.push(`Warehouse '${newWarehouse.name}', Bin ${newBin.id}: ${field} updated.`);
+             (Object.keys(newBin) as Array<keyof WarehouseBin>).forEach(field => {
+                const oldValue = oldBin[field];
+                const newValue = newBin[field];
+                if (field !== 'id' && String(newValue) !== String(oldValue)) {
+                    changes.push(`Warehouse '${newWarehouse.name}', Bin ${newBin.id}: ${field} changed from '${oldValue}' to '${newValue}'.`);
                 }
              });
           }
@@ -294,5 +295,3 @@ export default function WarehouseAdminPage() {
     </main>
   );
 }
-
-    
