@@ -11,8 +11,18 @@ import { warehouses as defaultWarehouses, type Warehouse, WarehouseBin } from '@
 import { useTranslation } from '@/context/language-context';
 import { Textarea } from '@/components/ui/textarea';
 import { updateWarehouses } from '@/ai/flows/update-warehouses-flow';
-import { Loader } from 'lucide-react';
+import { Loader, Plus, Minus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ChangeLog {
   user: string;
@@ -27,6 +37,11 @@ function WarehouseAdminDashboard() {
   const [logs, setLogs] = useState<ChangeLog[]>([]);
   const [currentUser, setCurrentUser] = useState('Admin');
   const { t } = useTranslation();
+
+  // State for the inventory dialog
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
+  const [selectedBinId, setSelectedBinId] = useState<string>('');
+  const [inventoryAmount, setInventoryAmount] = useState<number>(0);
 
   useEffect(() => {
     const savedWarehouses = localStorage.getItem('warehouses');
@@ -48,7 +63,6 @@ function WarehouseAdminDashboard() {
     warehouseData.forEach((newWarehouse) => {
       const oldWarehouse = oldWarehouseData.find(w => w.id === newWarehouse.id);
       if (oldWarehouse) {
-        // Check warehouse-level fields
         if (newWarehouse.name !== oldWarehouse.name) {
           changes.push(`Warehouse '${oldWarehouse.name}' -> '${newWarehouse.name}': Name changed from '${oldWarehouse.name}' to '${newWarehouse.name}'.`);
         }
@@ -56,7 +70,6 @@ function WarehouseAdminDashboard() {
           changes.push(`Warehouse '${newWarehouse.name}': Total capacity changed from '${oldWarehouse.totalCapacity}' to '${newWarehouse.totalCapacity}'.`);
         }
         
-        // Check bin-level fields
         newWarehouse.bins.forEach((newBin) => {
           const oldBin = oldWarehouse.bins.find(b => b.id === newBin.id);
           if (oldBin) {
@@ -131,36 +144,155 @@ function WarehouseAdminDashboard() {
       setWarehouseData(newWarehouseData);
       alert('Warehouse data updated with AI! Please review and save changes.');
 
-    } catch (error) {
+    } catch (error) => {
       console.error('AI update failed:', error);
       alert('Failed to update with AI. Please check the console for details.');
     } finally {
       setIsProcessing(false);
     }
   };
+  
+  const handleInventoryChange = (action: 'add' | 'remove') => {
+    if (!selectedWarehouseId || !selectedBinId || inventoryAmount <= 0) {
+      alert('Please select a warehouse, a bin, and enter a valid amount.');
+      return;
+    }
+
+    const whId = parseInt(selectedWarehouseId, 10);
+    
+    const newWarehouses = [...warehouseData];
+    const whIndex = newWarehouses.findIndex(wh => wh.id === whId);
+    if (whIndex === -1) return;
+
+    const binIndex = newWarehouses[whIndex].bins.findIndex(b => b.id === selectedBinId);
+    if (binIndex === -1) return;
+
+    const bin = newWarehouses[whIndex].bins[binIndex];
+    const currentTonnage = bin.tonnage;
+
+    if (action === 'add') {
+      bin.tonnage += inventoryAmount;
+    } else {
+      if (currentTonnage < inventoryAmount) {
+        alert(`Cannot remove ${inventoryAmount}T. Bin ${bin.id} only has ${currentTonnage}T.`);
+        return;
+      }
+      bin.tonnage -= inventoryAmount;
+    }
+    
+    setWarehouseData(newWarehouses);
+    alert(`Successfully ${action === 'add' ? 'added' : 'removed'} ${inventoryAmount}T. Please review and save changes.`);
+    
+    // Reset dialog fields
+    setSelectedWarehouseId('');
+    setSelectedBinId('');
+    setInventoryAmount(0);
+  };
+  
+  const selectedWarehouseForDialog = warehouseData.find(wh => wh.id === parseInt(selectedWarehouseId, 10));
 
   return (
     <div className="space-y-8">
-       <Card>
-        <CardHeader>
-          <CardTitle>Update with AI</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            Paste a text with warehouse updates, and the AI will fill in the fields for you. For example: "Warehouse 9 has 2900T of Corn in bin 9A (code AFRA) and 3000T of Barley in 9B (TEHR)."
-          </p>
-          <Textarea
-            placeholder="Paste your warehouse status update here..."
-            value={aiUpdateText}
-            onChange={(e) => setAiUpdateText(e.target.value)}
-            rows={5}
-          />
-          <Button onClick={handleAiUpdate} disabled={isProcessing}>
-            {isProcessing ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {isProcessing ? 'Processing...' : 'Update with AI'}
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Update with AI</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              Paste a text with warehouse updates, and the AI will fill in the fields for you. For example: "Warehouse 9 has 2900T of Corn in bin 9A (code AFRA) and 3000T of Barley in 9B (TEHR)."
+            </p>
+            <Textarea
+              placeholder="Paste your warehouse status update here..."
+              value={aiUpdateText}
+              onChange={(e) => setAiUpdateText(e.target.value)}
+              rows={5}
+            />
+            <Button onClick={handleAiUpdate} disabled={isProcessing}>
+              {isProcessing ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isProcessing ? 'Processing...' : 'Update with AI'}
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Manage Inventory</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Add or remove stock from a specific warehouse bin.
+            </p>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="w-full">Add / Remove Stock</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add or Remove Inventory</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="warehouse-select" className="text-right">
+                      Warehouse
+                    </Label>
+                    <Select value={selectedWarehouseId} onValueChange={id => {setSelectedWarehouseId(id); setSelectedBinId('')}}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select a warehouse" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {warehouseData.map(wh => (
+                                <SelectItem key={wh.id} value={String(wh.id)}>{wh.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  {selectedWarehouseForDialog && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="bin-select" className="text-right">
+                        Bin
+                      </Label>
+                      <Select value={selectedBinId} onValueChange={setSelectedBinId}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select a bin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {selectedWarehouseForDialog.bins.map(bin => (
+                                <SelectItem key={bin.id} value={bin.id}>{bin.id} ({bin.commodity})</SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="amount" className="text-right">
+                      Tonnage
+                    </Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      value={inventoryAmount}
+                      onChange={(e) => setInventoryAmount(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={() => handleInventoryChange('remove')} variant="destructive" disabled={!selectedBinId || inventoryAmount <= 0}>
+                        <Minus className="mr-2 h-4 w-4" /> Remove
+                    </Button>
+                    <Button onClick={() => handleInventoryChange('add')} disabled={!selectedBinId || inventoryAmount <= 0}>
+                        <Plus className="mr-2 h-4 w-4" /> Add
+                    </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
+      </div>
+
       <div>
         <h2 className="text-2xl font-bold mb-4">{t('updateWarehouseInfo')}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -295,3 +427,5 @@ export default function WarehouseAdminPage() {
     </main>
   );
 }
+
+    
