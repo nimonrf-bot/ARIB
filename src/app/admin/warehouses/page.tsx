@@ -144,7 +144,7 @@ function WarehouseAdminDashboard() {
       setWarehouseData(newWarehouseData);
       alert('Warehouse data updated with AI! Please review and save changes.');
 
-    } catch (error) => {
+    } catch (error) {
       console.error('AI update failed:', error);
       alert('Failed to update with AI. Please check the console for details.');
     } finally {
