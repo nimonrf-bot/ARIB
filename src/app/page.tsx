@@ -115,6 +115,9 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 
   // Clamp the progress for positioning to avoid icon going off-screen
   const positionProgress = Math.max(5, Math.min(95, displayProgress));
+  
+  const formatPortName = (name: string) => name.toLowerCase().replace(' port', '');
+
 
   return (
     <Card className="w-full p-4 bg-white shadow-lg rounded-xl">
@@ -136,9 +139,9 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
         <p className="text-sm text-gray-800 mb-4">{vessel.status}</p>
 
         <div className="relative pt-12 pb-8">
-          <div className="flex justify-between items-center mb-1">
-            <p className="text-md font-semibold">{vessel.origin}</p>
-            <p className="text-md font-semibold text-right">{vessel.destination}</p>
+          <div className="flex justify-between items-center mb-1 capitalize">
+            <p className="text-md font-semibold">{formatPortName(vessel.origin)}</p>
+            <p className="text-md font-semibold text-right">{formatPortName(vessel.destination)}</p>
           </div>
           <div className="flex items-end justify-between">
             <PortIcon className="w-8 h-8 text-gray-700"/>
