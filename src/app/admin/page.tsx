@@ -49,11 +49,6 @@ export default function AdminHubPage() {
             </CardContent>
           </Card>
         </div>
-        <div className="mt-8">
-          <Link href="/" className="text-sm font-medium text-primary hover:underline">
-            {t('statusPageLink')}
-          </Link>
-        </div>
       </div>
     </main>
   );

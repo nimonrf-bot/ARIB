@@ -406,9 +406,6 @@ export default function WarehouseAdminPage() {
             </Button>
           </CardContent>
            <CardFooter className="flex justify-center">
-            <Link href="/" className="text-sm font-medium text-primary hover:underline">
-              {t('statusPageLink')}
-            </Link>
           </CardFooter>
         </Card>
       </div>
@@ -419,9 +416,6 @@ export default function WarehouseAdminPage() {
     <main className="container mx-auto p-4 sm:p-8">
       <div className="flex justify-between items-center w-full mb-8">
         <h1 className="text-3xl font-bold">Warehouse Admin Panel</h1>
-         <Link href="/" className="text-sm font-medium text-primary hover:underline">
-          {t('statusPageLink')}
-        </Link>
       </div>
       <WarehouseAdminDashboard />
     </main>
