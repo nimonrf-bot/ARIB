@@ -14,6 +14,7 @@ import { updateVessels } from '@/ai/flows/update-vessels-flow';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const portNames = [
   'Caspian port',
@@ -27,16 +28,28 @@ const portNames = [
   'Ola port',
 ];
 
+interface ChangeLog {
+  user: string;
+  timestamp: string;
+  changes: string[];
+}
+
 function VesselAdminDashboard() {
   const { t } = useTranslation();
   const [vesselData, setVesselData] = useState<Vessel[]>(defaultVessels);
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [logs, setLogs] = useState<ChangeLog[]>([]);
+  const [currentUser, setCurrentUser] = useState('Admin');
 
   useEffect(() => {
     const savedVessels = localStorage.getItem('vessels');
     if (savedVessels) {
       setVesselData(JSON.parse(savedVessels));
+    }
+    const savedLogs = localStorage.getItem('vesselLogs');
+    if (savedLogs) {
+      setLogs(JSON.parse(savedLogs));
     }
   }, []);
 
@@ -67,6 +80,34 @@ function VesselAdminDashboard() {
   };
 
   const handleSaveChanges = () => {
+    const savedVesselsRaw = localStorage.getItem('vessels');
+    const oldVesselData: Vessel[] = savedVesselsRaw ? JSON.parse(savedVesselsRaw) : defaultVessels;
+    
+    const changes: string[] = [];
+
+    vesselData.forEach((newVessel, index) => {
+      const oldVessel = oldVesselData.find(v => v.id === newVessel.id);
+      if (oldVessel) {
+        Object.keys(newVessel).forEach(key => {
+          const field = key as keyof Vessel;
+          if (newVessel[field] !== oldVessel[field]) {
+            changes.push(`Vessel '${newVessel.vesselName}': ${field} updated.`);
+          }
+        });
+      }
+    });
+
+    if (changes.length > 0) {
+      const newLog: ChangeLog = {
+        user: currentUser,
+        timestamp: new Date().toLocaleString(),
+        changes: changes,
+      };
+      const updatedLogs = [newLog, ...logs];
+      setLogs(updatedLogs);
+      localStorage.setItem('vesselLogs', JSON.stringify(updatedLogs));
+    }
+
     localStorage.setItem('vessels', JSON.stringify(vesselData));
     alert(t('changesSaved'));
   };
@@ -92,7 +133,7 @@ function VesselAdminDashboard() {
         }
       });
       setVesselData(newVesselData);
-      alert('Vessel data updated with AI!');
+      alert('Vessel data updated with AI! Please review and save changes.');
 
     } catch (error) {
       console.error('AI update failed:', error);
@@ -197,6 +238,35 @@ function VesselAdminDashboard() {
         </div>
       </div>
       <Button size="lg" className="w-full" onClick={handleSaveChanges}>{t('saveChanges')}</Button>
+       <Card>
+        <CardHeader>
+          <CardTitle>Change History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>Changes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log, index) => (
+                <TableRow key={index}>
+                  <TableCell>{log.user}</TableCell>
+                  <TableCell>{log.timestamp}</TableCell>
+                  <TableCell>
+                    <ul className="list-disc list-inside">
+                      {log.changes.map((change, i) => <li key={i}>{change}</li>)}
+                    </ul>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -261,3 +331,5 @@ export default function VesAdmPage() {
     </main>
   );
 }
+
+    

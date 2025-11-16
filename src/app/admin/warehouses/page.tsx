@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,16 +7,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { warehouses as defaultWarehouses, type Warehouse } from '@/lib/data';
+import { warehouses as defaultWarehouses, type Warehouse, WarehouseBin } from '@/lib/data';
 import { useTranslation } from '@/context/language-context';
 import { Textarea } from '@/components/ui/textarea';
 import { updateWarehouses } from '@/ai/flows/update-warehouses-flow';
 import { Loader } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+interface ChangeLog {
+  user: string;
+  timestamp: string;
+  changes: string[];
+}
 
 function WarehouseAdminDashboard() {
   const [warehouseData, setWarehouseData] = useState<Warehouse[]>(defaultWarehouses);
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [logs, setLogs] = useState<ChangeLog[]>([]);
+  const [currentUser, setCurrentUser] = useState('Admin');
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -23,9 +33,55 @@ function WarehouseAdminDashboard() {
     if (savedWarehouses) {
       setWarehouseData(JSON.parse(savedWarehouses));
     }
+    const savedLogs = localStorage.getItem('warehouseLogs');
+    if (savedLogs) {
+      setLogs(JSON.parse(savedLogs));
+    }
   }, []);
 
   const handleSaveChanges = () => {
+    const savedWarehousesRaw = localStorage.getItem('warehouses');
+    const oldWarehouseData: Warehouse[] = savedWarehousesRaw ? JSON.parse(savedWarehousesRaw) : defaultWarehouses;
+
+    const changes: string[] = [];
+
+    warehouseData.forEach((newWarehouse) => {
+      const oldWarehouse = oldWarehouseData.find(w => w.id === newWarehouse.id);
+      if (oldWarehouse) {
+        // Check warehouse-level fields
+        if (newWarehouse.name !== oldWarehouse.name) {
+          changes.push(`Warehouse '${oldWarehouse.name}' -> '${newWarehouse.name}': Name updated.`);
+        }
+        if (newWarehouse.totalCapacity !== oldWarehouse.totalCapacity) {
+          changes.push(`Warehouse '${newWarehouse.name}': Total capacity updated.`);
+        }
+        
+        // Check bin-level fields
+        newWarehouse.bins.forEach((newBin) => {
+          const oldBin = oldWarehouse.bins.find(b => b.id === newBin.id);
+          if (oldBin) {
+             Object.keys(newBin).forEach(key => {
+                const field = key as keyof WarehouseBin;
+                if (field !== 'id' && newBin[field] !== oldBin[field]) {
+                    changes.push(`Warehouse '${newWarehouse.name}', Bin ${newBin.id}: ${field} updated.`);
+                }
+             });
+          }
+        });
+      }
+    });
+
+    if (changes.length > 0) {
+      const newLog: ChangeLog = {
+        user: currentUser,
+        timestamp: new Date().toLocaleString(),
+        changes: changes,
+      };
+      const updatedLogs = [newLog, ...logs];
+      setLogs(updatedLogs);
+      localStorage.setItem('warehouseLogs', JSON.stringify(updatedLogs));
+    }
+
     localStorage.setItem('warehouses', JSON.stringify(warehouseData));
     alert(t('changesSaved'));
   };
@@ -51,9 +107,7 @@ function WarehouseAdminDashboard() {
     try {
       const updatedWarehouses = await updateWarehouses(aiUpdateText);
       
-      // Create a map of existing warehouses by name for easy lookup
       const warehouseMap = new Map(warehouseData.map(wh => [wh.name.toLowerCase(), wh]));
-      
       const newWarehouseData = [...warehouseData];
 
       updatedWarehouses.forEach(updatedWh => {
@@ -61,11 +115,9 @@ function WarehouseAdminDashboard() {
         if (existingWarehouse) {
           const whIndex = newWarehouseData.findIndex(wh => wh.id === existingWarehouse.id);
           if (whIndex !== -1) {
-            // Update existing warehouse
             newWarehouseData[whIndex] = {
               ...newWarehouseData[whIndex],
               ...updatedWh,
-              // Ensure bins are updated correctly, keeping existing IDs
               bins: newWarehouseData[whIndex].bins.map(existingBin => {
                 const updatedBin = updatedWh.bins.find(ub => ub.id.toLowerCase() === existingBin.id.toLowerCase());
                 return updatedBin ? { ...existingBin, ...updatedBin } : existingBin;
@@ -76,7 +128,7 @@ function WarehouseAdminDashboard() {
       });
 
       setWarehouseData(newWarehouseData);
-      alert('Warehouse data updated with AI!');
+      alert('Warehouse data updated with AI! Please review and save changes.');
 
     } catch (error) {
       console.error('AI update failed:', error);
@@ -148,6 +200,35 @@ function WarehouseAdminDashboard() {
         </div>
       </div>
       <Button size="lg" className="w-full" onClick={handleSaveChanges}>{t('saveChanges')}</Button>
+      <Card>
+        <CardHeader>
+          <CardTitle>Change History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>Changes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log, index) => (
+                <TableRow key={index}>
+                  <TableCell>{log.user}</TableCell>
+                  <TableCell>{log.timestamp}</TableCell>
+                  <TableCell>
+                    <ul className="list-disc list-inside">
+                      {log.changes.map((change, i) => <li key={i}>{change}</li>)}
+                    </ul>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -213,3 +294,5 @@ export default function WarehouseAdminPage() {
     </main>
   );
 }
+
+    
