@@ -16,15 +16,15 @@ import { Loader } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const portNames = [
-  'Caspian',
-  'Anzali',
-  'Amirabad',
-  'Noshahr',
-  'Freidunkenar',
-  'Astrakhan',
-  'Makhachkala',
-  'Arib',
-  'Ola',
+  'Caspian port',
+  'Anzali port',
+  'Amirabad port',
+  'Noshahr port',
+  'Freidunkenar port',
+  'Astrakhan port',
+  'Makhachkala port',
+  'Arib port',
+  'Ola port',
 ];
 
 function VesselAdminDashboard() {
