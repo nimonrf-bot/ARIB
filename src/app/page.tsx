@@ -137,8 +137,8 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 
         <div className="relative pt-12 pb-8">
           <div className="flex justify-between items-center mb-1">
-            <p className="text-md font-semibold">{t('departurePort')}: {vessel.origin}</p>
-            <p className="text-md font-semibold text-right">{t('destinationPort')}: {vessel.destination}</p>
+            <p className="text-md font-semibold">{vessel.origin}</p>
+            <p className="text-md font-semibold text-right">{vessel.destination}</p>
           </div>
           <div className="flex items-end justify-between">
             <PortIcon className="w-8 h-8 text-gray-700"/>
