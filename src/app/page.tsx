@@ -114,7 +114,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   const etaDate = new Date(vessel.etaDate).toLocaleDateString();
 
   // Clamp the progress for positioning to avoid icon going off-screen
-  const positionProgress = Math.max(5, Math.min(95, displayProgress));
+  const positionProgress = Math.max(10, Math.min(90, displayProgress));
   
   const formatPortName = (name: string) => name.toLowerCase().replace(' port', '');
 
@@ -151,7 +151,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 
           <div
             className="absolute bottom-10 transform -translate-x-1/2"
-            style={{ left: `${positionProgress}%` }}
+            style={{ left: `${100 - positionProgress}%` }}
           >
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
@@ -285,3 +285,5 @@ export default function Home() {
     </main>
   );
 }
+
+    
