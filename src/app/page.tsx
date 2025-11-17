@@ -136,22 +136,22 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
           </div>
         </div>
         
-        <p className="text-sm text-gray-800 mb-4">{vessel.status}</p>
+        <p className="text-sm text-gray-800 mb-2">{vessel.status}</p>
 
-        <div className="relative pt-12 pb-8">
+        <div className="relative pt-8 pb-4">
           <div className="flex justify-between items-center mb-1 capitalize">
             <p className="text-md font-semibold">{formatPortName(vessel.destination)}</p>
             <p className="text-md font-semibold text-right">{formatPortName(vessel.origin)}</p>
           </div>
           <div className="flex items-end justify-between">
             <PortIcon className="w-8 h-8 text-gray-700"/>
-            <WaveIcon className="flex-grow text-black mx-2 h-5" />
+            <WaveIcon className="flex-grow text-black mx-1 h-5" />
             <PortIcon className="w-8 h-8 text-gray-700"/>
           </div>
 
           <div
-            className="absolute bottom-10 transform -translate-x-1/2"
-            style={{ left: `${100 - positionProgress}%` }}
+            className="absolute bottom-6 transform -translate-x-1/2"
+            style={{ left: `${positionProgress}%` }}
           >
              <div className="relative w-12 h-12">
                 <ShipIcon className="w-12 h-12 text-gray-600" />
@@ -163,7 +163,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
               </div>
           </div>
         </div>
-        <div className="flex justify-center items-center mt-2">
+        <div className="flex justify-center items-center">
             <ArrowRight className="w-6 h-6 text-gray-400" />
         </div>
       </CardContent>
