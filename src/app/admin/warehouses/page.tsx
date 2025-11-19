@@ -102,7 +102,22 @@ function WarehouseAdminDashboard() {
 
   const handleWarehouseChange = (index: number, field: keyof Warehouse, value: string | number) => {
     const newWarehouses = [...warehouseData];
-    (newWarehouses[index] as any)[field] = value;
+    const warehouse = newWarehouses[index];
+    (warehouse as any)[field] = value;
+
+    if (field === 'name' && typeof value === 'string') {
+      const warehouseNumberMatch = value.match(/\d+/);
+      if (warehouseNumberMatch) {
+        const warehouseNumber = warehouseNumberMatch[0];
+        warehouse.bins = warehouse.bins.map(bin => {
+          const binLetterMatch = bin.id.match(/[A-Z]$/);
+          if (binLetterMatch) {
+            return { ...bin, id: `${warehouseNumber}${binLetterMatch[0]}` };
+          }
+          return bin;
+        });
+      }
+    }
     setWarehouseData(newWarehouses);
   };
   
