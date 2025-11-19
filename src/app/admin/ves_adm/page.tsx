@@ -36,7 +36,7 @@ interface ChangeLog {
 
 function VesselAdminDashboard() {
   const { t } = useTranslation();
-  const [vesselData, setVesselData] = useState<Vessel[]>(defaultVessels);
+  const [vesselData, setVesselData] = useState<Vessel[]>([]);
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [logs, setLogs] = useState<ChangeLog[]>([]);
@@ -44,9 +44,8 @@ function VesselAdminDashboard() {
 
   useEffect(() => {
     const savedVessels = localStorage.getItem('vessels');
-    if (savedVessels) {
-      setVesselData(JSON.parse(savedVessels));
-    }
+    setVesselData(savedVessels ? JSON.parse(savedVessels) : defaultVessels);
+
     const savedLogs = localStorage.getItem('vesselLogs');
     if (savedLogs) {
       setLogs(JSON.parse(savedLogs));
@@ -86,7 +85,7 @@ function VesselAdminDashboard() {
     const changes: string[] = [];
 
     vesselData.forEach((newVessel) => {
-      const oldVessel = oldVesselData.find(v => v.id === newVessel.id);
+      const oldVessel = oldVesselData.find(v => v.id === newVessel.id) || defaultVessels.find(v => v.id === newVessel.id);
       if (oldVessel) {
         (Object.keys(newVessel) as Array<keyof Vessel>).forEach(field => {
           const oldValue = oldVessel[field];
@@ -326,3 +325,5 @@ export default function VesAdmPage() {
     </main>
   );
 }
+
+    

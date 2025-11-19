@@ -31,7 +31,7 @@ interface ChangeLog {
 }
 
 function WarehouseAdminDashboard() {
-  const [warehouseData, setWarehouseData] = useState<Warehouse[]>(defaultWarehouses);
+  const [warehouseData, setWarehouseData] = useState<Warehouse[]>([]);
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [logs, setLogs] = useState<ChangeLog[]>([]);
@@ -42,12 +42,12 @@ function WarehouseAdminDashboard() {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
   const [selectedBinId, setSelectedBinId] = useState<string>('');
   const [inventoryAmount, setInventoryAmount] = useState<number>(0);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     const savedWarehouses = localStorage.getItem('warehouses');
-    if (savedWarehouses) {
-      setWarehouseData(JSON.parse(savedWarehouses));
-    }
+    setWarehouseData(savedWarehouses ? JSON.parse(savedWarehouses) : defaultWarehouses);
+    
     const savedLogs = localStorage.getItem('warehouseLogs');
     if (savedLogs) {
       setLogs(JSON.parse(savedLogs));
@@ -61,7 +61,9 @@ function WarehouseAdminDashboard() {
     const changes: string[] = [];
 
     warehouseData.forEach((newWarehouse) => {
-      const oldWarehouse = oldWarehouseData.find(w => w.id === newWarehouse.id);
+      const oldWarehouse = oldWarehouseData.find(w => w.id === newWarehouse.id) || 
+                           defaultWarehouses.find(w => w.id === newWarehouse.id);
+
       if (oldWarehouse) {
         if (newWarehouse.name !== oldWarehouse.name) {
           changes.push(`Warehouse '${oldWarehouse.name}' -> '${newWarehouse.name}': Name changed from '${oldWarehouse.name}' to '${newWarehouse.name}'.`);
@@ -198,10 +200,11 @@ function WarehouseAdminDashboard() {
     setWarehouseData(newWarehouses);
     alert(`Successfully ${action === 'add' ? 'added' : 'removed'} ${inventoryAmount}T. Please review and save changes.`);
     
-    // Reset dialog fields
+    // Reset dialog fields and close it
     setSelectedWarehouseId('');
     setSelectedBinId('');
     setInventoryAmount(0);
+    setIsDialogOpen(false);
   };
   
   const selectedWarehouseForDialog = warehouseData.find(wh => wh.id === parseInt(selectedWarehouseId, 10));
@@ -237,7 +240,7 @@ function WarehouseAdminDashboard() {
             <p className="text-muted-foreground mb-4">
               Add or remove stock from a specific warehouse bin.
             </p>
-            <Dialog>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="w-full">Add / Remove Stock</Button>
               </DialogTrigger>
@@ -292,9 +295,7 @@ function WarehouseAdminDashboard() {
                   </div>
                 </div>
                 <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                     <Button onClick={() => handleInventoryChange('remove')} variant="destructive" disabled={!selectedBinId || inventoryAmount <= 0}>
                         <Minus className="mr-2 h-4 w-4" /> Remove
                     </Button>
@@ -436,3 +437,5 @@ export default function WarehouseAdminPage() {
     </main>
   );
 }
+
+    
