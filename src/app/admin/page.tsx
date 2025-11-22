@@ -5,24 +5,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/context/language-context';
 import { Building, Ship } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { useAuth, auth as firebaseAuth } from '@/firebase'; // Import the global auth instance
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Loader } from 'lucide-react';
 
 export default function AdminHubPage() {
   const { t } = useTranslation();
-  const { auth, user, loading } = useAuth();
+  // useAuth is still used to get the user and loading state
+  const { user, loading } = useAuth(); 
 
   const handleLogin = async () => {
-    if (!auth) {
+    // Use the directly imported auth instance for reliability
+    if (!firebaseAuth) {
       console.error("Auth service is not available.");
+      alert("Error: Authentication service is not configured correctly.");
       return;
     }
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
+      await signInWithPopup(firebaseAuth, provider);
+    } catch (error: any) {
       console.error("Authentication failed:", error);
+      alert(`Login failed. Code: ${error.code}\nMessage: ${error.message}`);
     }
   };
 
