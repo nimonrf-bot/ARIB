@@ -9,20 +9,20 @@ service cloud.firestore {
 
     match /vessels/{vesselId} {
       allow read: if true;
-      allow write: if true; // Temporarily allow public write for seeding
+      allow write: if isSignedIn();
     }
 
     match /warehouses/{warehouseId} {
       allow read: if true;
-      allow write: if true; // Temporarily allow public write for seeding
+      allow write: if isSignedIn();
     }
 
     match /vesselLogs/{logId} {
-      allow read, write: if isSignedIn();
+        allow read, write: if isSignedIn();
     }
     
     match /warehouseLogs/{logId} {
-      allow read, write: if isSignedIn();
+        allow read, write: if isSignedIn();
     }
   }
 }
