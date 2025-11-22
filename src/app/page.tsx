@@ -10,6 +10,7 @@ import { useTranslation } from "@/context/language-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Anchor, ArrowRight } from "lucide-react";
 import { useCollection } from "@/firebase";
+import { Loader } from "lucide-react";
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -239,9 +240,12 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 }
 
 export default function Home() {
-  const { data: vessels } = useCollection<Vessel>('vessels');
-  const { data: warehouses } = useCollection<Warehouse>('warehouses');
+  const { data: vessels, loading: vesselsLoading } = useCollection<Vessel>('vessels');
+  const { data: warehouses, loading: warehousesLoading } = useCollection<Warehouse>('warehouses');
   const { t } = useTranslation();
+  
+  const displayVessels = vesselsLoading ? [] : vessels || [];
+  const displayWarehouses = warehousesLoading ? [] : warehouses || [];
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
@@ -257,20 +261,35 @@ export default function Home() {
               </Link>
             </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {(vessels || defaultVessels).map((vessel) => (
-            <VesselJourneyCard key={vessel.id} vessel={vessel} />
-          ))}
-        </div>
+        
+        {vesselsLoading ? (
+           <div className="flex justify-center items-center h-64">
+            <Loader className="h-8 w-8 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            {displayVessels.map((vessel) => (
+              <VesselJourneyCard key={vessel.id} vessel={vessel} />
+            ))}
+          </div>
+        )}
+
 
         <h1 className="text-3xl font-bold my-8 text-center text-gray-800">
           {t('warehouseStatusTitle')}
         </h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
-           {(warehouses || defaultWarehouses).map((warehouse) => (
-            <WarehouseCard key={warehouse.id} warehouse={warehouse} />
-          ))}
-        </div>
+        
+        {warehousesLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader className="h-8 w-8 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+            {displayWarehouses.map((warehouse) => (
+              <WarehouseCard key={warehouse.id} warehouse={warehouse} />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
