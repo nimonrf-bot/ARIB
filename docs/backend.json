@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "vessel": {
+      "title": "Vessel",
+      "description": "A shipping vessel.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "cargo": { "type": "string" },
+        "vesselName": { "type": "string" },
+        "vesselId": { "type": "string" },
+        "departureDate": { "type": "string", "format": "date" },
+        "etaDate": { "type": "string", "format": "date" },
+        "anchored": { "type": "boolean" },
+        "origin": { "type": "string" },
+        "destination": { "type": "string" },
+        "progress": { "type": "number" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "vesselName", "vesselId"]
+    },
+    "warehouseBin": {
+      "title": "Warehouse Bin",
+      "description": "A bin within a warehouse.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "commodity": { "type": "string" },
+        "tonnage": { "type": "number" },
+        "code": { "type": "string" }
+      },
+      "required": ["id", "commodity", "tonnage"]
+    },
+    "warehouse": {
+      "title": "Warehouse",
+      "description": "A storage warehouse.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "totalCapacity": { "type": "number" },
+        "bins": {
+          "type": "array",
+          "items": { "$ref": "#/entities/warehouseBin" }
+        }
+      },
+      "required": ["id", "name", "totalCapacity", "bins"]
+    },
+    "changeLog": {
+        "title": "Change Log",
+        "description": "A log of changes made by a user.",
+        "type": "object",
+        "properties": {
+            "user": { "type": "string" },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "changes": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["user", "timestamp", "changes"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/vessels/{vesselId}": {
+      "schema": { "$ref": "#/entities/vessel" },
+      "description": "Stores documents for each vessel."
+    },
+    "/warehouses/{warehouseId}": {
+      "schema": { "$ref": "#/entities/warehouse" },
+      "description": "Stores documents for each warehouse."
+    },
+    "/vesselLogs/{logId}": {
+        "schema": { "$ref": "#/entities/changeLog"},
+        "description": "Stores change logs for vessel updates."
+    },
+    "/warehouseLogs/{logId}": {
+        "schema": { "$ref": "#/entities/changeLog"},
+        "description": "Stores change logs for warehouse updates."
+    }
+  }
+}

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "@/context/language-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Anchor, ArrowRight } from "lucide-react";
+import { useCollection } from "@/firebase";
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -136,9 +137,9 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
           </div>
         </div>
         
-        <p className="text-sm text-gray-800 mb-2">{vessel.status}</p>
+        <p className="text-sm text-gray-800 mb-4">{vessel.status}</p>
 
-        <div className="relative pt-8 pb-4">
+        <div className="relative pt-8 pb-2">
           <div className="flex justify-between items-center mb-1 capitalize">
             <p className="text-md font-semibold">{formatPortName(vessel.destination)}</p>
             <p className="text-md font-semibold text-right">{formatPortName(vessel.origin)}</p>
@@ -150,7 +151,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
           </div>
 
           <div
-            className="absolute bottom-6 transform -translate-x-1/2"
+            className="absolute bottom-4 transform -translate-x-1/2"
             style={{ left: `${positionProgress}%` }}
           >
              <div className="relative w-12 h-12">
@@ -238,20 +239,9 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 }
 
 export default function Home() {
-  const [vessels, setVessels] = useState<Vessel[]>(defaultVessels);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>(defaultWarehouses);
+  const { data: vessels } = useCollection<Vessel>('vessels');
+  const { data: warehouses } = useCollection<Warehouse>('warehouses');
   const { t } = useTranslation();
-
-  useEffect(() => {
-    const savedVessels = localStorage.getItem('vessels');
-    if (savedVessels) {
-      setVessels(JSON.parse(savedVessels));
-    }
-    const savedWarehouses = localStorage.getItem('warehouses');
-    if (savedWarehouses) {
-      setWarehouses(JSON.parse(savedWarehouses));
-    }
-  }, []);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
@@ -268,7 +258,7 @@ export default function Home() {
             </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {vessels.map((vessel) => (
+          {(vessels || defaultVessels).map((vessel) => (
             <VesselJourneyCard key={vessel.id} vessel={vessel} />
           ))}
         </div>
@@ -277,7 +267,7 @@ export default function Home() {
           {t('warehouseStatusTitle')}
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
-           {warehouses.map((warehouse) => (
+           {(warehouses || defaultWarehouses).map((warehouse) => (
             <WarehouseCard key={warehouse.id} warehouse={warehouse} />
           ))}
         </div>
@@ -285,5 +275,3 @@ export default function Home() {
     </main>
   );
 }
-
-    

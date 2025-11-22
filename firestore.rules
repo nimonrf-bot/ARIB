@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    match /vessels/{vesselId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /warehouses/{warehouseId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /vesselLogs/{logId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    match /warehouseLogs/{logId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

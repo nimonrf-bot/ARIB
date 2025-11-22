@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,21 +19,32 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth, useCollection, useFirestore } from '@/firebase';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 
 interface ChangeLog {
+  id?: string;
   user: string;
   timestamp: string;
   changes: string[];
 }
 
 function WarehouseAdminDashboard() {
-  const [warehouseData, setWarehouseData] = useState<Warehouse[]>([]);
+  const firestore = useFirestore();
+  const { user } = useAuth();
+  
+  const { data: warehouseData, setData: setWarehouseData } = useCollection<Warehouse>('warehouses');
+  const { data: logs, add: addLog } = useCollection<ChangeLog>('warehouseLogs');
+
+  const sortedLogs = useMemo(() => {
+    if (!logs) return [];
+    return [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [logs]);
+
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [logs, setLogs] = useState<ChangeLog[]>([]);
   const [currentUser, setCurrentUser] = useState('Admin');
   const { t } = useTranslation();
 
@@ -45,24 +55,21 @@ function WarehouseAdminDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    const savedWarehouses = localStorage.getItem('warehouses');
-    setWarehouseData(savedWarehouses ? JSON.parse(savedWarehouses) : defaultWarehouses);
-    
-    const savedLogs = localStorage.getItem('warehouseLogs');
-    if (savedLogs) {
-      setLogs(JSON.parse(savedLogs));
+    if (user) {
+      setCurrentUser(user.email || 'Admin');
     }
-  }, []);
+  }, [user]);
 
-  const handleSaveChanges = () => {
-    const savedWarehousesRaw = localStorage.getItem('warehouses');
-    const oldWarehouseData: Warehouse[] = savedWarehousesRaw ? JSON.parse(savedWarehousesRaw) : defaultWarehouses;
+  const handleSaveChanges = async () => {
+    if (!firestore || !warehouseData) return;
+
+    const savedWarehouses = await collection(firestore, 'warehouses').get();
+    const oldWarehouseData: Warehouse[] = savedWarehouses.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Warehouse));
 
     const changes: string[] = [];
 
     warehouseData.forEach((newWarehouse) => {
-      const oldWarehouse = oldWarehouseData.find(w => w.id === newWarehouse.id) || 
-                           defaultWarehouses.find(w => w.id === newWarehouse.id);
+      const oldWarehouse = oldWarehouseData.find(w => w.id === newWarehouse.id);
 
       if (oldWarehouse) {
         if (newWarehouse.name !== oldWarehouse.name) {
@@ -90,19 +97,25 @@ function WarehouseAdminDashboard() {
     if (changes.length > 0) {
       const newLog: ChangeLog = {
         user: currentUser,
-        timestamp: new Date().toLocaleString(),
+        timestamp: new Date().toISOString(),
         changes: changes,
       };
-      const updatedLogs = [newLog, ...logs];
-      setLogs(updatedLogs);
-      localStorage.setItem('warehouseLogs', JSON.stringify(updatedLogs));
+      addLog(newLog);
     }
+    
+    const batch = writeBatch(firestore);
+    warehouseData.forEach((warehouse) => {
+      const { id, ...data } = warehouse;
+      const docRef = doc(firestore, 'warehouses', String(id));
+      batch.set(docRef, data);
+    });
+    await batch.commit();
 
-    localStorage.setItem('warehouses', JSON.stringify(warehouseData));
     alert(t('changesSaved'));
   };
 
   const handleWarehouseChange = (index: number, field: keyof Warehouse, value: string | number) => {
+    if (!warehouseData) return;
     const newWarehouses = [...warehouseData];
     const warehouse = newWarehouses[index];
     (warehouse as any)[field] = value;
@@ -124,6 +137,7 @@ function WarehouseAdminDashboard() {
   };
   
   const handleWarehouseBinChange = (whIndex: number, binIndex: number, field: keyof Warehouse['bins'][0], value: string | number) => {
+    if (!warehouseData) return;
     const newWarehouses = [...warehouseData];
     (newWarehouses[whIndex].bins[binIndex] as any)[field] = value;
     setWarehouseData(newWarehouses);
@@ -137,6 +151,10 @@ function WarehouseAdminDashboard() {
     setIsProcessing(true);
     try {
       const updatedWarehouses = await updateWarehouses(aiUpdateText);
+      if (!warehouseData) {
+        setIsProcessing(false);
+        return;
+      }
       
       const warehouseMap = new Map(warehouseData.map(wh => [wh.name.toLowerCase(), wh]));
       const newWarehouseData = [...warehouseData];
@@ -170,7 +188,7 @@ function WarehouseAdminDashboard() {
   };
   
   const handleInventoryChange = (action: 'add' | 'remove') => {
-    if (!selectedWarehouseId || !selectedBinId || inventoryAmount <= 0) {
+    if (!selectedWarehouseId || !selectedBinId || inventoryAmount <= 0 || !warehouseData) {
       alert('Please select a warehouse, a bin, and enter a valid amount.');
       return;
     }
@@ -207,7 +225,12 @@ function WarehouseAdminDashboard() {
     setIsDialogOpen(false);
   };
   
-  const selectedWarehouseForDialog = warehouseData.find(wh => wh.id === parseInt(selectedWarehouseId, 10));
+  const selectedWarehouseForDialog = warehouseData?.find(wh => wh.id === parseInt(selectedWarehouseId, 10));
+  
+  if (!warehouseData) {
+    return <div className="flex justify-center items-center h-screen"><Loader className="h-8 w-8 animate-spin" /></div>;
+  }
+
 
   return (
     <div className="space-y-8">
@@ -363,10 +386,10 @@ function WarehouseAdminDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs.map((log, index) => (
-                <TableRow key={index}>
+              {sortedLogs.map((log) => (
+                <TableRow key={log.id}>
                   <TableCell>{log.user}</TableCell>
-                  <TableCell>{log.timestamp}</TableCell>
+                  <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
                   <TableCell>
                     <ul className="list-disc list-inside">
                       {log.changes.map((change, i) => <li key={i}>{change}</li>)}
@@ -384,45 +407,25 @@ function WarehouseAdminDashboard() {
 
 
 export default function WarehouseAdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const { user, loading } = useAuth();
   const { t } = useTranslation();
 
-  const handleLogin = () => {
-    if (password === 'warehousepass') {
-      setIsAuthenticated(true);
-      setError('');
-    } else {
-      setError(t('incorrectPassword'));
-    }
-  };
+  if (loading) {
+     return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Warehouse Admin Login</CardTitle>
+            <CardContent>You must be logged in to view this page.</CardContent>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">{t('password')}</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button onClick={handleLogin} className="w-full">
-              {t('login')}
-            </Button>
-          </CardContent>
-           <CardFooter className="flex justify-center">
-          </CardFooter>
         </Card>
       </div>
     );
@@ -437,5 +440,3 @@ export default function WarehouseAdminPage() {
     </main>
   );
 }
-
-    

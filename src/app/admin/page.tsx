@@ -5,9 +5,45 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/context/language-context';
 import { Building, Ship } from 'lucide-react';
+import { useAuth } from '@/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { Loader } from 'lucide-react';
 
 export default function AdminHubPage() {
   const { t } = useTranslation();
+  const { auth, user, loading } = useAuth();
+
+  const handleLogin = async () => {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Authentication failed:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+       <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
+        <Loader className="h-8 w-8 animate-spin" />
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
+        <div className="w-full max-w-md text-center">
+          <h1 className="text-3xl font-bold text-gray-800 mb-8">
+            {t('adminPanelTitle')}
+          </h1>
+          <p className="text-muted-foreground mb-4">Please log in to manage the admin panels.</p>
+          <Button onClick={handleLogin}>Log in with Google</Button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAuth, useCollection, useFirestore } from '@/firebase';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 
 const portNames = [
   'Caspian port',
@@ -29,6 +31,7 @@ const portNames = [
 ];
 
 interface ChangeLog {
+  id?: string;
   user: string;
   timestamp: string;
   changes: string[];
@@ -36,24 +39,29 @@ interface ChangeLog {
 
 function VesselAdminDashboard() {
   const { t } = useTranslation();
-  const [vesselData, setVesselData] = useState<Vessel[]>([]);
+  const firestore = useFirestore();
+  const { user } = useAuth();
+
+  const { data: vesselData, setData: setVesselData } = useCollection<Vessel>('vessels');
+  const { data: logs, add: addLog } = useCollection<ChangeLog>('vesselLogs');
+
+  const sortedLogs = useMemo(() => {
+    if (!logs) return [];
+    return [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [logs]);
+  
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [logs, setLogs] = useState<ChangeLog[]>([]);
   const [currentUser, setCurrentUser] = useState('Admin');
 
-  useEffect(() => {
-    const savedVessels = localStorage.getItem('vessels');
-    setVesselData(savedVessels ? JSON.parse(savedVessels) : defaultVessels);
-
-    const savedLogs = localStorage.getItem('vesselLogs');
-    if (savedLogs) {
-      setLogs(JSON.parse(savedLogs));
+   useEffect(() => {
+    if (user) {
+      setCurrentUser(user.email || 'Admin');
     }
-  }, []);
+  }, [user]);
 
   const handleVesselChange = (index: number, field: keyof Vessel, value: string | number | boolean) => {
-    const newVessels = [...vesselData];
+    const newVessels = [...(vesselData || [])];
     const vessel = newVessels[index];
 
     // Date validation
@@ -78,19 +86,21 @@ function VesselAdminDashboard() {
     setVesselData(newVessels);
   };
 
-  const handleSaveChanges = () => {
-    const savedVesselsRaw = localStorage.getItem('vessels');
-    const oldVesselData: Vessel[] = savedVesselsRaw ? JSON.parse(savedVesselsRaw) : defaultVessels;
-    
+  const handleSaveChanges = async () => {
+    if (!firestore || !vesselData) return;
+
+    const savedVessels = await collection(firestore, 'vessels').get();
+    const oldVesselData: Vessel[] = savedVessels.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Vessel));
+
     const changes: string[] = [];
 
     vesselData.forEach((newVessel) => {
-      const oldVessel = oldVesselData.find(v => v.id === newVessel.id) || defaultVessels.find(v => v.id === newVessel.id);
+      const oldVessel = oldVesselData.find(v => v.id === newVessel.id);
       if (oldVessel) {
         (Object.keys(newVessel) as Array<keyof Vessel>).forEach(field => {
           const oldValue = oldVessel[field];
           const newValue = newVessel[field];
-          if (String(newValue) !== String(oldValue)) {
+           if (String(newValue) !== String(oldValue)) {
             changes.push(`Vessel '${newVessel.vesselName}': ${field} changed from '${oldValue}' to '${newValue}'.`);
           }
         });
@@ -100,15 +110,20 @@ function VesselAdminDashboard() {
     if (changes.length > 0) {
       const newLog: ChangeLog = {
         user: currentUser,
-        timestamp: new Date().toLocaleString(),
+        timestamp: new Date().toISOString(),
         changes: changes,
       };
-      const updatedLogs = [newLog, ...logs];
-      setLogs(updatedLogs);
-      localStorage.setItem('vesselLogs', JSON.stringify(updatedLogs));
+      addLog(newLog);
     }
+    
+    const batch = writeBatch(firestore);
+    vesselData.forEach((vessel) => {
+      const { id, ...data } = vessel;
+      const docRef = doc(firestore, 'vessels', String(id));
+      batch.set(docRef, data);
+    });
+    await batch.commit();
 
-    localStorage.setItem('vessels', JSON.stringify(vesselData));
     alert(t('changesSaved'));
   };
 
@@ -120,8 +135,8 @@ function VesselAdminDashboard() {
     setIsProcessing(true);
     try {
       const updatedVessels = await updateVessels(aiUpdateText);
-      const vesselMap = new Map(vesselData.map(v => [v.vesselName.toLowerCase(), v]));
-      const newVesselData = [...vesselData];
+      const vesselMap = new Map((vesselData || []).map(v => [v.vesselName.toLowerCase(), v]));
+      const newVesselData = [...(vesselData || [])];
 
       updatedVessels.forEach(updatedVessel => {
         const existingVessel = vesselMap.get(updatedVessel.vesselName.toLowerCase());
@@ -142,6 +157,10 @@ function VesselAdminDashboard() {
       setIsProcessing(false);
     }
   };
+
+  if (!vesselData) {
+    return <div className="flex justify-center items-center h-screen"><Loader className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -252,10 +271,10 @@ function VesselAdminDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs.map((log, index) => (
-                <TableRow key={index}>
+              {sortedLogs.map((log) => (
+                <TableRow key={log.id}>
                   <TableCell>{log.user}</TableCell>
-                  <TableCell>{log.timestamp}</TableCell>
+                  <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
                   <TableCell>
                     <ul className="list-disc list-inside">
                       {log.changes.map((change, i) => <li key={i}>{change}</li>)}
@@ -272,45 +291,25 @@ function VesselAdminDashboard() {
 }
 
 export default function VesAdmPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const { user, loading } = useAuth();
   const { t } = useTranslation();
 
-  const handleLogin = () => {
-    if (password === 'vesselpass') {
-      setIsAuthenticated(true);
-      setError('');
-    } else {
-      setError(t('incorrectPassword'));
-    }
-  };
+  if (loading) {
+     return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Vessel Admin Login</CardTitle>
+             <CardContent>You must be logged in to view this page.</CardContent>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">{t('password')}</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button onClick={handleLogin} className="w-full">
-              {t('login')}
-            </Button>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-          </CardFooter>
         </Card>
       </div>
     );
@@ -325,5 +324,3 @@ export default function VesAdmPage() {
     </main>
   );
 }
-
-    
