@@ -1,10 +1,11 @@
 'use client';
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { auth, firestore } from '.';
+import { auth as initializedAuth, firestore } from '.';
 import { firebaseApp } from './config';
+import { browserLocalPersistence, setPersistence } from 'firebase/auth';
 
 export interface FirebaseContext {
   firebaseApp?: FirebaseApp;
@@ -15,8 +16,14 @@ export interface FirebaseContext {
 const FirebaseContext = createContext<FirebaseContext | null>(null);
 
 export const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
+  useEffect(() => {
+    if (initializedAuth) {
+      setPersistence(initializedAuth, browserLocalPersistence);
+    }
+  }, []);
+
   return (
-    <FirebaseContext.Provider value={{ firebaseApp, auth, firestore }}>
+    <FirebaseContext.Provider value={{ firebaseApp, auth: initializedAuth, firestore }}>
       {children}
     </FirebaseContext.Provider>
   );
