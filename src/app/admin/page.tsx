@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useTranslation } from '@/context/language-context';
 import { Building, Ship } from 'lucide-react';
 import { useAuth } from '@/firebase'; 
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -11,7 +10,6 @@ import { firebaseApp } from '@/firebase/config';
 import { Loader } from 'lucide-react';
 
 export default function AdminHubPage() {
-  const { t } = useTranslation();
   const { user, loading } = useAuth(); 
 
   const handleLogin = async () => {
@@ -21,7 +19,9 @@ export default function AdminHubPage() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Authentication failed:", error);
-      alert(`Login failed. Code: ${error.code}\nMessage: ${error.message}`);
+      const errorMessage = error?.message || 'An unknown error occurred.';
+      const errorCode = error?.code || 'undefined';
+      alert(`Login failed. Code: ${errorCode}\nMessage: ${errorMessage}`);
     }
   };
 
@@ -38,7 +38,7 @@ export default function AdminHubPage() {
       <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
         <div className="w-full max-w-md text-center">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">
-            {t('adminPanelTitle')}
+            Admin Panel
           </h1>
           <p className="text-muted-foreground mb-4">Please log in to manage the admin panels.</p>
           <Button onClick={handleLogin}>Log in with Google</Button>
@@ -51,7 +51,7 @@ export default function AdminHubPage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
       <div className="w-full max-w-md text-center">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">
-          {t('adminPanelTitle')}
+          Admin Panel
         </h1>
         <div className="grid grid-cols-1 gap-8">
           <Card>
