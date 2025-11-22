@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect } from 'react';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { auth as initializedAuth, firestore } from '.';
+import { auth as initializedAuth, firestore as initializedFirestore } from '.';
 import { firebaseApp } from './config';
 import { browserLocalPersistence, setPersistence } from 'firebase/auth';
 
@@ -23,7 +23,7 @@ export const FirebaseProvider = ({ children }: { children: React.ReactNode }) =>
   }, []);
 
   return (
-    <FirebaseContext.Provider value={{ firebaseApp, auth: initializedAuth, firestore }}>
+    <FirebaseContext.Provider value={{ firebaseApp, auth: initializedAuth, firestore: initializedFirestore }}>
       {children}
     </FirebaseContext.Provider>
   );
