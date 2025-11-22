@@ -33,8 +33,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const t = (key: string): string => {
-    const langTranslations = translations[language];
-    return langTranslations?.[key] || key;
+    // Fallback to English if a translation is missing in the current language
+    return translations[language]?.[key] || translations.en[key] || key;
   };
 
   return (
