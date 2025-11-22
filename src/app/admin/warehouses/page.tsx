@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { warehouses as defaultWarehouses, type Warehouse, WarehouseBin } from '@/lib/data';
-import { useTranslation } from '@/context/language-context';
 import { Textarea } from '@/components/ui/textarea';
 import { updateWarehouses } from '@/ai/flows/update-warehouses-flow';
 import { Loader, Plus, Minus } from 'lucide-react';
@@ -46,7 +45,6 @@ function WarehouseAdminDashboard() {
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentUser, setCurrentUser] = useState('Admin');
-  const { t } = useTranslation();
 
   // State for the inventory dialog
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
@@ -111,7 +109,7 @@ function WarehouseAdminDashboard() {
     });
     await batch.commit();
 
-    alert(t('changesSaved'));
+    alert('Changes saved!');
   };
 
   const handleWarehouseChange = (index: number, field: keyof Warehouse, value: string | number) => {
@@ -333,31 +331,31 @@ function WarehouseAdminDashboard() {
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold mb-4">{t('updateWarehouseInfo')}</h2>
+        <h2 className="text-2xl font-bold mb-4">Update Warehouse Information</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            {warehouseData.map((warehouse, whIndex) => (
              <Card key={warehouse.id}>
                 <CardHeader>
-                  <CardTitle>{t('warehouse')} {warehouse.id}</CardTitle>
+                  <CardTitle>Warehouse {warehouse.id}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>{t('warehouseName')}</Label>
+                    <Label>Warehouse Name</Label>
                     <Input value={warehouse.name} onChange={e => handleWarehouseChange(whIndex, 'name', e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('totalCapacityT')}</Label>
+                    <Label>Total Capacity (T)</Label>
                     <Input type="number" value={warehouse.totalCapacity} onChange={e => handleWarehouseChange(whIndex, 'totalCapacity', parseInt(e.target.value, 10))} />
                   </div>
                   {warehouse.bins.map((bin, binIndex) => (
                     <div key={bin.id} className="p-4 border rounded-md space-y-2">
-                       <h4 className="font-semibold">{t('bin')} {bin.id}</h4>
+                       <h4 className="font-semibold">Bin {bin.id}</h4>
                        <div className="space-y-2">
-                          <Label>{t('commodity')}</Label>
+                          <Label>Commodity</Label>
                           <Input value={bin.commodity} onChange={e => handleWarehouseBinChange(whIndex, binIndex, 'commodity', e.target.value)} />
                        </div>
                        <div className="space-y-2">
-                          <Label>{t('tonnage')}</Label>
+                          <Label>Tonnage</Label>
                           <Input type="number" value={bin.tonnage} onChange={e => handleWarehouseBinChange(whIndex, binIndex, 'tonnage', parseInt(e.target.value, 10))} />
                        </div>
                        <div className="space-y-2">
@@ -371,7 +369,7 @@ function WarehouseAdminDashboard() {
            ))}
         </div>
       </div>
-      <Button size="lg" className="w-full" onClick={handleSaveChanges}>{t('saveChanges')}</Button>
+      <Button size="lg" className="w-full" onClick={handleSaveChanges}>Save Changes</Button>
       <Card>
         <CardHeader>
           <CardTitle>Change History</CardTitle>
@@ -408,7 +406,6 @@ function WarehouseAdminDashboard() {
 
 export default function WarehouseAdminPage() {
   const { user, loading } = useAuth();
-  const { t } = useTranslation();
 
   if (loading) {
      return (

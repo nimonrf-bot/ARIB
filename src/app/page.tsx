@@ -6,8 +6,6 @@ import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { useTranslation } from "@/context/language-context";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { Anchor, ArrowRight } from "lucide-react";
 import { useCollection } from "@/firebase";
 import { Loader } from "lucide-react";
@@ -71,7 +69,6 @@ const WaveIcon = ({ className }: { className?: string }) => (
 
 
 const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
-  const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -130,11 +127,11 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
               {vessel.vesselName} ({vessel.vesselId})
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              <span className="font-semibold">{t('cargo')}:</span> {vessel.cargo}
+              <span className="font-semibold">Cargo:</span> {vessel.cargo}
             </p>
           </div>
           <div className="text-right">
-             <p className="text-lg text-gray-600">{t('eta')}: {etaDate}</p>
+             <p className="text-lg text-gray-600">ETA: {etaDate}</p>
           </div>
         </div>
         
@@ -174,7 +171,6 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 };
 
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
-  const { t } = useTranslation();
   const currentStock = warehouse.bins.reduce((acc, bin) => acc + bin.tonnage, 0);
   const fillPercentage = (currentStock / warehouse.totalCapacity) * 100;
   const remainingCapacity = warehouse.totalCapacity - currentStock;
@@ -223,7 +219,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
         </div>
         <div className="text-center mt-4 space-y-1">
           <p className="font-bold text-lg">
-            {t('totalCapacity')}: {warehouse.totalCapacity.toLocaleString()}T
+            Total Capacity: {warehouse.totalCapacity.toLocaleString()}T
           </p>
           <p className={cn(
             "font-semibold", 
@@ -231,7 +227,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
             { 'text-yellow-600': capacityColor === 'yellow' },
             { 'text-red-600': capacityColor === 'red' }
           )}>
-            {t('available')}: {remainingCapacity.toLocaleString()}T
+            Available: {remainingCapacity.toLocaleString()}T
           </p>
         </div>
       </CardContent>
@@ -242,7 +238,6 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 export default function Home() {
   const { data: vessels, loading: vesselsLoading } = useCollection<Vessel>('vessels');
   const { data: warehouses, loading: warehousesLoading } = useCollection<Warehouse>('warehouses');
-  const { t } = useTranslation();
   
   const displayVessels = vesselsLoading ? [] : vessels || [];
   const displayWarehouses = warehousesLoading ? [] : warehouses || [];
@@ -252,12 +247,11 @@ export default function Home() {
       <div className="w-full max-w-7xl">
         <div className="flex justify-between items-center w-full mb-8">
             <h1 className="text-3xl font-bold text-gray-800">
-             {t('vesselTrackerTitle')}
+             ARIB Vessel Tracker
             </h1>
             <div className="flex items-center gap-4">
-              <LanguageSwitcher />
               <Link href="/admin" className="font-medium text-primary hover:underline">
-                  {t('adminPanelLink')}
+                  Admin Panel
               </Link>
             </div>
         </div>
@@ -276,7 +270,7 @@ export default function Home() {
 
 
         <h1 className="text-3xl font-bold my-8 text-center text-gray-800">
-          {t('warehouseStatusTitle')}
+          Arib Warehouse Status
         </h1>
         
         {warehousesLoading ? (

@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { vessels as defaultVessels, type Vessel } from '@/lib/data';
-import { useTranslation } from '@/context/language-context';
 import { updateVessels } from '@/ai/flows/update-vessels-flow';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader } from 'lucide-react';
@@ -38,7 +37,6 @@ interface ChangeLog {
 }
 
 function VesselAdminDashboard() {
-  const { t } = useTranslation();
   const firestore = useFirestore();
   const { user } = useAuth();
 
@@ -124,7 +122,7 @@ function VesselAdminDashboard() {
     });
     await batch.commit();
 
-    alert(t('changesSaved'));
+    alert('Changes saved!');
   };
 
   const handleAiUpdate = async () => {
@@ -185,7 +183,7 @@ function VesselAdminDashboard() {
         </CardContent>
       </Card>
       <div>
-        <h2 className="text-2xl font-bold mb-4">{t('updateVesselInfo')}</h2>
+        <h2 className="text-2xl font-bold mb-4">Update Vessel Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {vesselData.map((vessel, index) => (
             <Card key={vessel.id}>
@@ -194,15 +192,15 @@ function VesselAdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>{t('status')}</Label>
+                  <Label>Status</Label>
                   <Input value={vessel.status} onChange={e => handleVesselChange(index, 'status', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('cargo')}</Label>
+                  <Label>Cargo</Label>
                   <Input value={vessel.cargo} onChange={e => handleVesselChange(index, 'cargo', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('departurePort')}</Label>
+                  <Label>Departure Port</Label>
                   <Select
                     value={vessel.origin}
                     onValueChange={value => handleVesselChange(index, 'origin', value)}
@@ -221,7 +219,7 @@ function VesselAdminDashboard() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('destinationPort')}</Label>
+                  <Label>Destination Port</Label>
                    <Select
                     value={vessel.destination}
                     onValueChange={value => handleVesselChange(index, 'destination', value)}
@@ -240,23 +238,23 @@ function VesselAdminDashboard() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('departureDate')}</Label>
+                  <Label>Departure Date</Label>
                   <Input type="date" value={vessel.departureDate} onChange={e => handleVesselChange(index, 'departureDate', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('etaDate')}</Label>
+                  <Label>ETA Date</Label>
                   <Input type="date" value={vessel.etaDate} onChange={e => handleVesselChange(index, 'etaDate', e.target.value)} />
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch id={`anchored-${vessel.id}`} checked={vessel.anchored} onCheckedChange={checked => handleVesselChange(index, 'anchored', checked)} />
-                  <Label htmlFor={`anchored-${vessel.id}`}>{t('anchored')}</Label>
+                  <Label htmlFor={`anchored-${vessel.id}`}>Anchored</Label>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
-      <Button size="lg" className="w-full" onClick={handleSaveChanges}>{t('saveChanges')}</Button>
+      <Button size="lg" className="w-full" onClick={handleSaveChanges}>Save Changes</Button>
        <Card>
         <CardHeader>
           <CardTitle>Change History</CardTitle>
@@ -292,7 +290,6 @@ function VesselAdminDashboard() {
 
 export default function VesAdmPage() {
   const { user, loading } = useAuth();
-  const { t } = useTranslation();
 
   if (loading) {
      return (

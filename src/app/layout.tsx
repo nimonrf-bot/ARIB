@@ -1,6 +1,5 @@
 import type {Metadata} from 'next';
 import './globals.css';
-import { LanguageProvider } from '@/context/language-context';
 import { FirebaseProvider } from '@/firebase/provider';
 
 export const metadata: Metadata = {
@@ -17,9 +16,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-body antialiased">
         <FirebaseProvider>
-          <LanguageProvider>
             {children}
-          </LanguageProvider>
         </FirebaseProvider>
       </body>
     </html>
