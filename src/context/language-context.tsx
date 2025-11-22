@@ -12,7 +12,11 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const translations: Record<Language, { [key: string]: string }> = { en, ru };
+// Ensure translations are always valid objects, even if imports fail.
+const translations: Record<Language, { [key: string]: string }> = { 
+  en: en || {}, 
+  ru: ru || {} 
+};
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
@@ -20,21 +24,29 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguage] = useState<Language>('en');
 
   useEffect(() => {
-    // Check for saved language in localStorage
-    const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
-      setLanguage(savedLanguage);
+    try {
+      const savedLanguage = localStorage.getItem('language') as Language;
+      if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
+        setLanguage(savedLanguage);
+      }
+    } catch (error) {
+      console.error("Could not access localStorage to get language.", error);
     }
   }, []);
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
-    localStorage.setItem('language', lang);
+    try {
+      localStorage.setItem('language', lang);
+    } catch (error) {
+       console.error("Could not access localStorage to set language.", error);
+    }
   };
 
   const t = (key: string): string => {
-    // Fallback to English if a translation is missing in the current language
-    return translations[language]?.[key] || translations.en[key] || key;
+    // Defensive check to ensure the function is safe.
+    const langTranslations = translations[language] || translations.en || {};
+    return langTranslations[key] || key;
   };
 
   return (
