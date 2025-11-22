@@ -14,7 +14,10 @@ export default function AdminHubPage() {
   const { auth, user, loading } = useAuth();
 
   const handleLogin = async () => {
-    if (!auth) return;
+    if (!auth) {
+      console.error("Auth service is not available.");
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
