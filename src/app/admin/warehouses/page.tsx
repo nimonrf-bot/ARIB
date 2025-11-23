@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type Warehouse, type WarehouseBin } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { updateWarehouses } from '@/ai/flows/update-warehouses-flow';
-import { Loader, Plus, Minus, ShieldAlert } from 'lucide-react';
+import { Loader, Plus, Minus, ShieldAlert, Upload } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Dialog,
@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth, useCollection, useFirestore } from '@/firebase';
 import { collection, doc, writeBatch, getDocs, type DocumentData } from 'firebase/firestore';
 import { WAREHOUSE_ADMINS } from '@/lib/admins';
+import * as XLSX from 'xlsx';
 
 
 interface ChangeLog extends DocumentData {
@@ -51,12 +52,62 @@ function WarehouseAdminDashboard() {
   const [selectedBinId, setSelectedBinId] = useState<string>('');
   const [inventoryAmount, setInventoryAmount] = useState<number>(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user && user.email) {
       setCurrentUser(user.email);
     }
   }, [user]);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      if (json.length === 0) {
+        alert('The uploaded file is empty or in an incorrect format.');
+        return;
+      }
+      
+      const newWarehouses: { [key: number]: Warehouse } = {};
+
+      for (const row of json) {
+        const warehouseId = parseInt(row.warehouseId, 10);
+        if (isNaN(warehouseId)) continue;
+
+        if (!newWarehouses[warehouseId]) {
+          newWarehouses[warehouseId] = {
+            id: warehouseId,
+            name: row.warehouseName,
+            totalCapacity: parseInt(row.totalCapacity, 10),
+            bins: [],
+          };
+        }
+
+        newWarehouses[warehouseId].bins.push({
+          id: row.binId,
+          commodity: row.commodity,
+          tonnage: parseInt(row.tonnage, 10),
+          code: row.code,
+        });
+      }
+
+      setWarehouseData(Object.values(newWarehouses));
+      alert('Data from Excel has been loaded. Please review the changes and click "Save Changes" to apply them.');
+    };
+    reader.readAsArrayBuffer(file);
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+  };
 
   const handleSaveChanges = async () => {
     if (!firestore || !warehouseData) return;
@@ -234,28 +285,8 @@ function WarehouseAdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Update with AI</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Paste a text with warehouse updates, and the AI will fill in the fields for you. For example: "Warehouse 9 has 2900T of Corn in bin 9A (code AFRA) and 3000T of Barley in 9B (TEHR)."
-            </p>
-            <Textarea
-              placeholder="Paste your warehouse status update here..."
-              value={aiUpdateText}
-              onChange={(e) => setAiUpdateText(e.target.value)}
-              rows={5}
-            />
-            <Button onClick={handleAiUpdate} disabled={isProcessing}>
-              {isProcessing ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isProcessing ? 'Processing...' : 'Update with AI'}
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle>Manage Inventory</CardTitle>
           </CardHeader>
@@ -329,6 +360,44 @@ function WarehouseAdminDashboard() {
               </DialogContent>
             </Dialog>
           </CardContent>
+        </Card>
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle>Update with AI</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Textarea
+              placeholder="Paste your warehouse status update here..."
+              value={aiUpdateText}
+              onChange={(e) => setAiUpdateText(e.target.value)}
+              rows={3}
+            />
+            <Button onClick={handleAiUpdate} disabled={isProcessing} className="w-full">
+              {isProcessing ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isProcessing ? 'Processing...' : 'Update with AI'}
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="md:col-span-1">
+            <CardHeader>
+                <CardTitle>Upload from File</CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <p className="text-muted-foreground mb-4">
+                    Upload an Excel (.xlsx) or CSV file to populate warehouse data.
+                </p>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept=".xlsx, .xls, .csv"
+                />
+                <Button onClick={() => fileInputRef.current?.click()} className="w-full">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Excel File
+                </Button>
+            </CardContent>
         </Card>
       </div>
 
