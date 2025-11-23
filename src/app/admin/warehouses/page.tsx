@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { type Warehouse, type WarehouseBin } from '@/lib/data';
+import { type Warehouse, type WarehouseBin, warehouses as defaultWarehouses } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { updateWarehouses } from '@/ai/flows/update-warehouses-flow';
-import { Loader, Plus, Minus, ShieldAlert, Upload } from 'lucide-react';
+import { Loader, Plus, Minus, Upload } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Dialog,
@@ -19,34 +19,69 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth, useCollection, useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, getDocs, type DocumentData } from 'firebase/firestore';
-import { WAREHOUSE_ADMINS } from '@/lib/admins';
 import * as XLSX from 'xlsx';
 
-
-interface ChangeLog extends DocumentData {
+interface ChangeLog {
   id?: string;
   user: string;
   timestamp: string;
   changes: string[];
 }
 
-function WarehouseAdminDashboard() {
-  const firestore = useFirestore();
-  const { user } = useAuth();
+function useLocalStorage<T>(key: string, initialValue: T) {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
+    try {
+      const item = window.localStorage.getItem(key);
+      if (item) {
+        return JSON.parse(item);
+      } else {
+        window.localStorage.setItem(key, JSON.stringify(initialValue));
+        return initialValue;
+      }
+    } catch (error) {
+      console.log(error);
+      return initialValue;
+    }
+  });
+
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
   
-  const { data: warehouseData, setData: setWarehouseData, loading: warehousesLoading } = useCollection<Warehouse>('warehouses');
-  const { data: logs, add: addLog, loading: logsLoading } = useCollection<ChangeLog>('warehouseLogs');
+  useEffect(() => {
+    const item = window.localStorage.getItem(key);
+    if (!item) {
+      setValue(initialValue);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return [storedValue, setValue] as const;
+}
+
+function WarehouseAdminDashboard() {
+  const [warehouseData, setWarehouseData] = useLocalStorage<Warehouse[]>('warehouses', defaultWarehouses);
+  const [logs, setLogs] = useLocalStorage<ChangeLog[]>('warehouseLogs', []);
+  const [loading, setLoading] = useState(true);
 
   const sortedLogs = useMemo(() => {
-    if (!logs) return [];
     return [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [logs]);
 
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentUser, setCurrentUser] = useState('Admin');
+  const currentUser = 'Admin';
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
   const [selectedBinId, setSelectedBinId] = useState<string>('');
@@ -55,10 +90,14 @@ function WarehouseAdminDashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user && user.email) {
-      setCurrentUser(user.email);
-    }
-  }, [user]);
+    setLoading(false);
+  }, []);
+  
+  // Store the state before a change for the log
+  useEffect(() => {
+    localStorage.setItem('warehouses_before_change', JSON.stringify(warehouseData));
+  }, []);
+
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -110,13 +149,10 @@ function WarehouseAdminDashboard() {
   };
 
   const handleSaveChanges = async () => {
-    if (!firestore || !warehouseData) return;
+    const oldWarehouseDataJSON = localStorage.getItem('warehouses_before_change');
+    const oldWarehouseData: Warehouse[] = oldWarehouseDataJSON ? JSON.parse(oldWarehouseDataJSON) : defaultWarehouses;
 
-    const warehousesCollectionRef = collection(firestore, 'warehouses');
-    const savedWarehousesSnapshot = await getDocs(warehousesCollectionRef);
-    const oldWarehouseData: Warehouse[] = savedWarehousesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Warehouse));
     const warehouseMap = new Map(oldWarehouseData.map(w => [w.id, w]));
-
     const changes: string[] = [];
 
     warehouseData.forEach((newWarehouse) => {
@@ -149,26 +185,19 @@ function WarehouseAdminDashboard() {
 
     if (changes.length > 0) {
       const newLog: ChangeLog = {
+        id: new Date().toISOString(),
         user: currentUser,
         timestamp: new Date().toISOString(),
         changes: changes,
       };
-      await addLog(newLog);
+      setLogs([newLog, ...logs]);
     }
     
-    const batch = writeBatch(firestore);
-    warehouseData.forEach((warehouse) => {
-      const { id, ...data } = warehouse;
-      const docRef = doc(firestore, 'warehouses', String(id));
-      batch.set(docRef, data, { merge: true });
-    });
-    await batch.commit();
-
-    alert('Changes saved!');
+    localStorage.setItem('warehouses_before_change', JSON.stringify(warehouseData));
+    alert('Changes saved to local storage!');
   };
 
   const handleWarehouseChange = (index: number, field: keyof Warehouse, value: string | number) => {
-    if (!warehouseData) return;
     const newWarehouses = [...warehouseData];
     const warehouse = newWarehouses[index];
     (warehouse as any)[field] = value;
@@ -190,7 +219,6 @@ function WarehouseAdminDashboard() {
   };
   
   const handleWarehouseBinChange = (whIndex: number, binIndex: number, field: keyof Warehouse['bins'][0], value: string | number) => {
-    if (!warehouseData) return;
     const newWarehouses = [...warehouseData];
     (newWarehouses[whIndex].bins[binIndex] as any)[field] = value;
     setWarehouseData(newWarehouses);
@@ -204,10 +232,6 @@ function WarehouseAdminDashboard() {
     setIsProcessing(true);
     try {
       const updatedWarehouses = await updateWarehouses(aiUpdateText);
-      if (!warehouseData) {
-        setIsProcessing(false);
-        return;
-      }
       
       const warehouseMap = new Map(warehouseData.map(wh => [wh.name.toLowerCase(), wh]));
       const newWarehouseData = [...warehouseData];
@@ -241,7 +265,7 @@ function WarehouseAdminDashboard() {
   };
   
   const handleInventoryChange = (action: 'add' | 'remove') => {
-    if (!selectedWarehouseId || !selectedBinId || inventoryAmount <= 0 || !warehouseData) {
+    if (!selectedWarehouseId || !selectedBinId || inventoryAmount <= 0) {
       alert('Please select a warehouse, a bin, and enter a valid amount.');
       return;
     }
@@ -279,7 +303,7 @@ function WarehouseAdminDashboard() {
   
   const selectedWarehouseForDialog = warehouseData?.find(wh => wh.id === parseInt(selectedWarehouseId, 10));
   
-  if (warehousesLoading || logsLoading) {
+  if (loading) {
     return <div className="flex justify-center items-center h-screen"><Loader className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -312,7 +336,7 @@ function WarehouseAdminDashboard() {
                             <SelectValue placeholder="Select a warehouse" />
                         </SelectTrigger>
                         <SelectContent>
-                            {(warehouseData || []).map(wh => (
+                            {warehouseData.map(wh => (
                                 <SelectItem key={wh.id} value={String(wh.id)}>{wh.name}</SelectItem>
                             ))}
                         </SelectContent>
@@ -404,7 +428,7 @@ function WarehouseAdminDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Update Warehouse Information</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           {(warehouseData || []).map((warehouse, whIndex) => (
+           {warehouseData.map((warehouse, whIndex) => (
              <Card key={warehouse.id}>
                 <CardHeader>
                   <CardTitle>Warehouse {warehouse.id}</CardTitle>
@@ -475,49 +499,6 @@ function WarehouseAdminDashboard() {
 }
 
 export default function WarehouseAdminPage() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Warehouse Admin Login</CardTitle>
-          </CardHeader>
-          <CardContent><p>You must be logged in to view this page.</p></CardContent>
-        </Card>
-      </div>
-    );
-  }
-  
-  if (!user.email || !WAREHOUSE_ADMINS.includes(user.email)) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-          <Card className="w-full max-w-md text-center border-red-500">
-              <CardHeader>
-                  <CardTitle className="flex items-center justify-center gap-2 text-red-600">
-                      <ShieldAlert className="h-6 w-6" />
-                      <span>Access Denied</span>
-                  </CardTitle>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-muted-foreground">
-                      Your account <span className="font-semibold">{user.email}</span> is not authorized to access the Warehouse Admin panel.
-                  </p>
-              </CardContent>
-          </Card>
-      </div>
-    );
-  }
-
   return (
     <main className="container mx-auto p-4 sm:p-8">
       <div className="flex justify-between items-center w-full mb-8">

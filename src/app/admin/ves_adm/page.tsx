@@ -8,13 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { updateVessels } from '@/ai/flows/update-vessels-flow';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader, ShieldAlert } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useAuth, useCollection, useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, getDocs, type DocumentData } from 'firebase/firestore';
-import { VESSEL_ADMINS } from '@/lib/admins';
 import type { Vessel } from '@/lib/data';
+import { vessels as defaultVessels } from '@/lib/data';
 
 const portNames = [
   'Caspian port',
@@ -28,37 +26,74 @@ const portNames = [
   'Ola port',
 ];
 
-interface ChangeLog extends DocumentData {
+interface ChangeLog {
   id?: string;
   user: string;
   timestamp: string;
   changes: string[];
 }
 
-function VesselAdminDashboard() {
-  const firestore = useFirestore();
-  const { user } = useAuth();
+function useLocalStorage<T>(key: string, initialValue: T) {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
+    try {
+      const item = window.localStorage.getItem(key);
+      if (item) {
+        return JSON.parse(item);
+      } else {
+        window.localStorage.setItem(key, JSON.stringify(initialValue));
+        return initialValue;
+      }
+    } catch (error) {
+      console.log(error);
+      return initialValue;
+    }
+  });
 
-  const { data: vesselData, setData: setVesselData, loading: vesselsLoading } = useCollection<Vessel>('vessels');
-  const { data: logs, add: addLog, loading: logsLoading } = useCollection<ChangeLog>('vesselLogs');
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  
+  useEffect(() => {
+    const item = window.localStorage.getItem(key);
+    if (!item) {
+      setValue(initialValue);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+  return [storedValue, setValue] as const;
+}
+
+function VesselAdminDashboard() {
+  const [vesselData, setVesselData] = useLocalStorage<Vessel[]>('vessels', defaultVessels);
+  const [logs, setLogs] = useLocalStorage<ChangeLog[]>('vesselLogs', []);
+  const [loading, setLoading] = useState(true);
 
   const sortedLogs = useMemo(() => {
-    if (!logs) return [];
     return [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [logs]);
   
   const [aiUpdateText, setAiUpdateText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentUser, setCurrentUser] = useState('Admin');
+  const currentUser = 'Admin'; // User is always Admin now
 
    useEffect(() => {
-    if (user && user.email) {
-      setCurrentUser(user.email);
-    }
-  }, [user]);
+    setLoading(false);
+  }, []);
 
   const handleVesselChange = (index: number, field: keyof Vessel, value: string | number | boolean) => {
-    if (!vesselData) return;
     const newVessels = [...vesselData];
     const vessel = newVessels[index];
 
@@ -84,11 +119,12 @@ function VesselAdminDashboard() {
   };
 
   const handleSaveChanges = async () => {
-    if (!firestore || !vesselData) return;
-
-    const vesselsCollectionRef = collection(firestore, 'vessels');
-    const savedVesselsSnapshot = await getDocs(vesselsCollectionRef);
-    const oldVesselData: Vessel[] = savedVesselsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Vessel));
+    // Data is already saved to localStorage on every change by the hook.
+    // This button can provide user feedback.
+    
+    // We'll regenerate the change log here.
+    const oldVesselDataJSON = localStorage.getItem('vessels_before_change');
+    const oldVesselData: Vessel[] = oldVesselDataJSON ? JSON.parse(oldVesselDataJSON) : defaultVessels;
 
     const changes: string[] = [];
     const vesselMap = new Map(oldVesselData.map(v => [v.id, v]));
@@ -109,23 +145,25 @@ function VesselAdminDashboard() {
 
     if (changes.length > 0) {
       const newLog: ChangeLog = {
+        id: new Date().toISOString(), // simple id
         user: currentUser,
         timestamp: new Date().toISOString(),
         changes: changes,
       };
-      await addLog(newLog);
+      setLogs([newLog, ...logs]);
     }
     
-    const batch = writeBatch(firestore);
-    vesselData.forEach((vessel) => {
-      const { id, ...data } = vessel;
-      const docRef = doc(firestore, 'vessels', String(id));
-      batch.set(docRef, data, { merge: true });
-    });
-    await batch.commit();
+    // Set the "before" state for the next save.
+    localStorage.setItem('vessels_before_change', JSON.stringify(vesselData));
 
-    alert('Changes saved!');
+    alert('Changes saved to local storage!');
   };
+  
+  // Store the state before a change for the log
+  useEffect(() => {
+    localStorage.setItem('vessels_before_change', JSON.stringify(vesselData));
+  }, []);
+
 
   const handleAiUpdate = async () => {
     if (!aiUpdateText.trim()) {
@@ -135,8 +173,8 @@ function VesselAdminDashboard() {
     setIsProcessing(true);
     try {
       const updatedVessels = await updateVessels(aiUpdateText);
-      const vesselMap = new Map((vesselData || []).map(v => [v.vesselName.toLowerCase(), v]));
-      const newVesselData = [...(vesselData || [])];
+      const vesselMap = new Map(vesselData.map(v => [v.vesselName.toLowerCase(), v]));
+      const newVesselData = [...vesselData];
 
       updatedVessels.forEach(updatedVessel => {
         const existingVessel = vesselMap.get(updatedVessel.vesselName.toLowerCase());
@@ -158,7 +196,7 @@ function VesselAdminDashboard() {
     }
   };
 
-  if (vesselsLoading || logsLoading) {
+  if (loading) {
     return <div className="flex justify-center items-center h-screen"><Loader className="h-8 w-8 animate-spin" /></div>;
   }
   
@@ -187,7 +225,7 @@ function VesselAdminDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Update Vessel Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(vesselData || []).map((vessel, index) => (
+          {vesselData.map((vessel, index) => (
             <Card key={vessel.id}>
               <CardHeader>
                 <CardTitle>{vessel.vesselName}</CardTitle>
@@ -291,49 +329,6 @@ function VesselAdminDashboard() {
 }
 
 export default function VesAdmPage() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Vessel Admin Login</CardTitle>
-          </CardHeader>
-          <CardContent><p>You must be logged in to view this page.</p></CardContent>
-        </Card>
-      </div>
-    );
-  }
-  
-  if (!user.email || !VESSEL_ADMINS.includes(user.email)) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-          <Card className="w-full max-w-md text-center border-red-500">
-              <CardHeader>
-                  <CardTitle className="flex items-center justify-center gap-2 text-red-600">
-                      <ShieldAlert className="h-6 w-6" />
-                      <span>Access Denied</span>
-                  </CardTitle>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-muted-foreground">
-                      Your account <span className="font-semibold">{user.email}</span> is not authorized to access the Vessel Admin panel.
-                  </p>
-              </CardContent>
-          </Card>
-      </div>
-    );
-  }
-
   return (
     <main className="container mx-auto p-4 sm:p-8">
       <div className="flex justify-between items-center w-full mb-8">

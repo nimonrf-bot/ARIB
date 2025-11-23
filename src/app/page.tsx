@@ -1,13 +1,10 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { vessels as defaultVessels, warehouses as defaultWarehouses, type Vessel, type Warehouse } from "@/lib/data";
-import Link from "next/link";
+import { type Vessel, type Warehouse } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { Anchor, ArrowRight } from "lucide-react";
-import { useCollection } from "@/firebase";
 import { Loader } from "lucide-react";
 
 
@@ -235,12 +232,57 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
   )
 }
 
+function useLocalStorage<T>(key: string, initialValue: T) {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.log(error);
+      return initialValue;
+    }
+  });
+
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  // This effect synchronizes the state with localStorage when it changes in another tab.
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === key && e.newValue) {
+        setStoredValue(JSON.parse(e.newValue));
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [key]);
+
+  return [storedValue, setValue] as const;
+}
+
 export default function Home() {
-  const { data: vessels, loading: vesselsLoading } = useCollection<Vessel>('vessels');
-  const { data: warehouses, loading: warehousesLoading } = useCollection<Warehouse>('warehouses');
-  
-  const displayVessels = vesselsLoading ? [] : vessels || [];
-  const displayWarehouses = warehousesLoading ? [] : warehouses || [];
+  const [vessels, setVessels] = useLocalStorage<Vessel[]>('vessels', []);
+  const [warehouses, setWarehouses] = useLocalStorage<Warehouse[]>('warehouses', []);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading
+    setLoading(false);
+  }, []);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
@@ -249,20 +291,15 @@ export default function Home() {
             <h1 className="text-3xl font-bold text-gray-800">
              ARIB Vessel Tracker
             </h1>
-            <div className="flex items-center gap-4">
-              <Link href="/admin" className="font-medium text-primary hover:underline">
-                  Admin Panel
-              </Link>
-            </div>
         </div>
         
-        {vesselsLoading ? (
+        {loading ? (
            <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            {displayVessels.map((vessel) => (
+            {(vessels || []).map((vessel) => (
               <VesselJourneyCard key={vessel.id} vessel={vessel} />
             ))}
           </div>
@@ -273,13 +310,13 @@ export default function Home() {
           Arib Warehouse Status
         </h1>
         
-        {warehousesLoading ? (
+        {loading ? (
           <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
-            {displayWarehouses.map((warehouse) => (
+            {(warehouses || []).map((warehouse) => (
               <WarehouseCard key={warehouse.id} warehouse={warehouse} />
             ))}
           </div>

@@ -1,6 +1,5 @@
 import type {Metadata} from 'next';
 import './globals.css';
-import { FirebaseProvider } from '@/firebase/provider';
 
 export const metadata: Metadata = {
   title: 'ARIB',
@@ -26,9 +25,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#E6F3FF" />
       </head>
       <body className="font-body antialiased">
-        <FirebaseProvider>
-            {children}
-        </FirebaseProvider>
+        {children}
       </body>
     </html>
   );
