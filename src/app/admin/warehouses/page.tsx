@@ -232,7 +232,6 @@ function WarehouseAdminDashboard() {
     return <div className="flex justify-center items-center h-screen"><Loader className="h-8 w-8 animate-spin" /></div>;
   }
 
-
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -296,7 +295,7 @@ function WarehouseAdminDashboard() {
                       <Select value={selectedBinId} onValueChange={setSelectedBinId}>
                         <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="Select a bin" />
-                        </Trigger>
+                        </SelectTrigger>
                         <SelectContent>
                             {selectedWarehouseForDialog.bins.map(bin => (
                                 <SelectItem key={bin.id} value={bin.id}>{bin.id} ({bin.commodity})</SelectItem>
