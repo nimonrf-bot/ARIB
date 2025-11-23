@@ -19,9 +19,7 @@ export default function AdminHubPage() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Authentication failed:", error);
-      const errorMessage = error?.message || 'An unknown error occurred.';
-      const errorCode = error?.code || 'undefined';
-      alert(`Login failed. Code: ${errorCode}\nMessage: ${errorMessage}`);
+      alert(`Login failed. An unknown error occurred. Please check the browser console for details.`);
     }
   };
 
