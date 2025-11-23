@@ -228,7 +228,7 @@ function VesselAdminDashboard() {
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a port" />
-                    </Trigger>
+                    </SelectTrigger>
                     <SelectContent>
                       {portNames
                         .filter(port => port !== vessel.origin)
