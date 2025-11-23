@@ -8,8 +8,8 @@ import { Anchor, ArrowRight } from "lucide-react";
 import { Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-
+import * as XLSX from 'xlsx';
+import { DATA_URLS } from "@/lib/config";
 
 const ShipIcon = ({ className }: { className?: string }) => (
   <svg
@@ -79,25 +79,30 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
       }
       
       const now = new Date();
-      const start = new Date(vessel.departureDate);
-      const end = new Date(vessel.etaDate);
+      // Handle potential date format issues from Excel
+      const departureDate = typeof vessel.departureDate === 'number'
+        ? new Date(Math.round((vessel.departureDate - 25569) * 86400 * 1000))
+        : new Date(vessel.departureDate);
+      const etaDate = typeof vessel.etaDate === 'number'
+        ? new Date(Math.round((vessel.etaDate - 25569) * 86400 * 1000))
+        : new Date(vessel.etaDate);
       
-      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+      if (isNaN(departureDate.getTime()) || isNaN(etaDate.getTime()) || etaDate <= departureDate) {
         setProgress(0);
         return;
       }
       
-      if (now >= end) {
+      if (now >= etaDate) {
         setProgress(100);
         return;
       }
-      if (now <= start) {
+      if (now <= departureDate) {
         setProgress(0);
         return;
       }
 
-      const totalDuration = end.getTime() - start.getTime();
-      const elapsedDuration = now.getTime() - start.getTime();
+      const totalDuration = etaDate.getTime() - departureDate.getTime();
+      const elapsedDuration = now.getTime() - departureDate.getTime();
       const calculatedProgress = Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
       
       setProgress(calculatedProgress);
@@ -110,12 +115,16 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   }, [vessel]);
 
   const displayProgress = vessel.anchored ? vessel.progress : progress;
-  const etaDate = new Date(vessel.etaDate).toLocaleDateString();
+  const etaDateObj = typeof vessel.etaDate === 'number'
+    ? new Date(Math.round((vessel.etaDate - 25569) * 86400 * 1000))
+    : new Date(vessel.etaDate);
+  const etaDateStr = isNaN(etaDateObj.getTime()) ? "Invalid Date" : etaDateObj.toLocaleDateString();
+
 
   // Clamp the progress for positioning to avoid icon going off-screen
   const positionProgress = Math.max(10, Math.min(90, displayProgress));
   
-  const formatPortName = (name: string) => name.toLowerCase().replace(' port', '');
+  const formatPortName = (name: string) => name ? name.toLowerCase().replace(' port', '') : '';
 
 
   return (
@@ -131,7 +140,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
             </p>
           </div>
           <div className="text-right">
-             <p className="text-lg text-gray-600">ETA: {etaDate}</p>
+             <p className="text-lg text-gray-600">ETA: {etaDateStr}</p>
           </div>
         </div>
         
@@ -236,22 +245,70 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 }
 
 export default function Home() {
-  const [vessels, setVessels] = useLocalStorage<Vessel[]>('vessel_data', []);
-  const [warehouses, setWarehouses] = useLocalStorage<Warehouse[]>('warehouse_data', []);
+  const [vessels, setVessels] = useState<Vessel[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // This effect will run once on mount, and then whenever the data in localStorage changes.
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch and parse vessel data
+      const vesselRes = await fetch(DATA_URLS.vessels);
+      if (!vesselRes.ok) throw new Error(`Failed to fetch vessel data: ${vesselRes.statusText}`);
+      const vesselArrayBuffer = await vesselRes.arrayBuffer();
+      const vesselWorkbook = XLSX.read(vesselArrayBuffer, { type: 'buffer' });
+      const vesselSheetName = vesselWorkbook.SheetNames[0];
+      const vesselWorksheet = vesselWorkbook.Sheets[vesselSheetName];
+      const vesselData: Vessel[] = XLSX.utils.sheet_to_json(vesselWorksheet);
+      setVessels(vesselData);
+
+      // Fetch and parse warehouse data
+      const warehouseRes = await fetch(DATA_URLS.warehouses);
+      if (!warehouseRes.ok) throw new Error(`Failed to fetch warehouse data: ${warehouseRes.statusText}`);
+      const warehouseArrayBuffer = await warehouseRes.arrayBuffer();
+      const warehouseWorkbook = XLSX.read(warehouseArrayBuffer, { type: 'buffer' });
+      const warehouseSheetName = warehouseWorkbook.SheetNames[0];
+      const warehouseWorksheet = warehouseWorkbook.Sheets[warehouseSheetName];
+      const flatWarehouseData: any[] = XLSX.utils.sheet_to_json(warehouseWorksheet);
+
+      // Un-flatten warehouse data
+      const warehouseMap = new Map<number, Warehouse>();
+      flatWarehouseData.forEach(row => {
+        const warehouseId = row.warehouseId;
+        if (!warehouseMap.has(warehouseId)) {
+          warehouseMap.set(warehouseId, {
+            id: warehouseId,
+            name: row.warehouseName,
+            totalCapacity: row.warehouseTotalCapacity,
+            bins: [],
+          });
+        }
+        warehouseMap.get(warehouseId)?.bins.push({
+          id: row.binId,
+          commodity: row.binCommodity,
+          tonnage: row.binTonnage,
+          code: row.binCode,
+        });
+      });
+      setWarehouses(Array.from(warehouseMap.values()));
+
+    } catch (e: any) {
+      console.error("Failed to load data:", e);
+      setError("Failed to load data from the source files. Please ensure the URLs in src/lib/config.ts are correct and the files are publicly accessible.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setLoading(false);
-  }, [vessels, warehouses]);
+    fetchData();
+  }, []);
 
-  // A simple function to force a re-render by updating the state from localStorage
-  const refreshData = () => {
-    const freshVessels = JSON.parse(window.localStorage.getItem('vessel_data') || '[]');
-    const freshWarehouses = JSON.parse(window.localStorage.getItem('warehouse_data') || '[]');
-    setVessels(freshVessels);
-    setWarehouses(freshWarehouses);
-  }
+  const handleRefresh = () => {
+    fetchData();
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
@@ -262,7 +319,7 @@ export default function Home() {
              ARIB Vessel
             </h1>
             <div className="flex-1 flex justify-end">
-              <Button onClick={refreshData}>
+              <Button onClick={handleRefresh}>
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Refresh
               </Button>
@@ -273,15 +330,20 @@ export default function Home() {
            <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
+        ) : error ? (
+          <div className="text-center py-10 text-red-600 bg-red-50 p-4 rounded-lg">
+            <p className="font-bold">Error</p>
+            <p>{error}</p>
+          </div>
         ) : vessels && vessels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            {vessels.map((vessel) => (
-              <VesselJourneyCard key={vessel.id} vessel={vessel} />
+            {vessels.map((vessel, index) => (
+              <VesselJourneyCard key={vessel.id || index} vessel={vessel} />
             ))}
           </div>
         ) : (
           <div className="text-center py-10 text-gray-500">
-            <p>No vessel data found. Please go to the <a href="/admin/ves_adm" className="underline">Vessel Admin</a> page to add data.</p>
+            <p>No vessel data found. The source file might be empty or unavailable.</p>
           </div>
         )}
 
@@ -294,15 +356,20 @@ export default function Home() {
           <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
+        ) : error ? (
+           <div className="text-center py-10 text-red-600 bg-red-50 p-4 rounded-lg">
+            <p className="font-bold">Error</p>
+            <p>Could not load warehouse data.</p>
+          </div>
         ) : warehouses && warehouses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
-            {warehouses.map((warehouse) => (
-              <WarehouseCard key={warehouse.id} warehouse={warehouse} />
+            {warehouses.map((warehouse, index) => (
+              <WarehouseCard key={warehouse.id || index} warehouse={warehouse} />
             ))}
           </div>
         ) : (
           <div className="text-center py-10 text-gray-500">
-            <p>No warehouse data found. Please go to the <a href="/admin/warehouses" className="underline">Warehouse Admin</a> page to add data.</p>
+            <p>No warehouse data found. The source file might be empty or unavailable.</p>
           </div>
         )}
       </div>

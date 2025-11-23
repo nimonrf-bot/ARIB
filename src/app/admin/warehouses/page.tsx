@@ -1,55 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, AlertTriangle, CheckCircle } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from "@/hooks/use-toast";
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { warehouses as defaultWarehouses, Warehouse } from '@/lib/data';
+import { Download } from 'lucide-react';
+import { warehouses as defaultWarehouses } from '@/lib/data';
+import { saveAs } from 'file-saver';
+import * as XLSX from 'xlsx';
+import { DATA_URLS } from '@/lib/config';
 
 function WarehouseAdminDashboard() {
-  const [warehouses, setWarehouses] = useLocalStorage<Warehouse[]>('warehouse_data', defaultWarehouses);
-  const [textData, setTextData] = useState('');
-  const { toast } = useToast();
+  const handleDownloadTemplate = () => {
+    // We need to flatten the data for a better Excel structure
+    const flattenedData = defaultWarehouses.flatMap(w => 
+      w.bins.map(b => ({
+        warehouseId: w.id,
+        warehouseName: w.name,
+        warehouseTotalCapacity: w.totalCapacity,
+        binId: b.id,
+        binCommodity: b.commodity,
+        binTonnage: b.tonnage,
+        binCode: b.code,
+      }))
+    );
 
-  useEffect(() => {
-    // Pre-populate the textarea with the current data from local storage
-    if (warehouses) {
-      setTextData(JSON.stringify(warehouses, null, 2));
-    }
-  }, [warehouses]);
-
-  const handleSave = () => {
-    try {
-      const parsedData = JSON.parse(textData);
-      // You could add Zod validation here if needed
-      setWarehouses(parsedData);
-      toast({
-        title: "Save Successful",
-        description: "Warehouse data has been saved to local storage.",
-        action: <CheckCircle className="text-green-500" />,
-      });
-    } catch (error) {
-      console.error("Failed to parse and save warehouse data:", error);
-      toast({
-        variant: "destructive",
-        title: "Save Failed",
-        description: "The text is not valid JSON. Please correct it and try again.",
-        action: <AlertTriangle className="text-white" />,
-      });
-    }
+    const worksheet = XLSX.utils.json_to_sheet(flattenedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Warehouses');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    saveAs(data, 'warehouse_template.xlsx');
   };
-  
-  const loadDefaultData = () => {
-    setWarehouses(defaultWarehouses);
-    setTextData(JSON.stringify(defaultWarehouses, null, 2));
-    toast({
-        title: "Default Data Loaded",
-        description: "The default warehouse data has been loaded. Click 'Save' to apply.",
-      });
-  }
 
   return (
     <div className="space-y-8">
@@ -57,26 +37,27 @@ function WarehouseAdminDashboard() {
         <CardHeader>
           <CardTitle>Warehouse Data Management</CardTitle>
           <CardDescription>
-            Edit the warehouse data in the JSON format below. Click 'Save' to update the application data in your browser.
+            Download the Excel template to manage your warehouse data. After updating, host the file at a public URL.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Textarea
-            value={textData}
-            onChange={(e) => setTextData(e.target.value)}
-            rows={20}
-            className="font-mono text-sm"
-            placeholder="Enter warehouse data in JSON format..."
-          />
-          <div className="flex justify-between gap-2">
-            <Button onClick={handleSave}>
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
-            <Button variant="outline" onClick={loadDefaultData}>
-              Load Default Data
-            </Button>
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="font-semibold text-blue-800">Instructions:</h3>
+            <ol className="list-decimal list-inside mt-2 text-sm text-blue-700 space-y-1">
+              <li>Click the button below to download the Excel template.</li>
+              <li>Edit the file to update your warehouse information.</li>
+              <li>Upload the saved file to a public hosting service of your choice.</li>
+              <li>
+                Update the URL in <code className="bg-blue-100 p-1 rounded">src/lib/config.ts</code> to point to your new file location.
+                The current URL is: <a href={DATA_URLS.warehouses} target="_blank" rel="noopener noreferrer" className="underline">{DATA_URLS.warehouses}</a>
+              </li>
+              <li>The homepage will automatically reflect the changes from the new file.</li>
+            </ol>
           </div>
+          <Button onClick={handleDownloadTemplate}>
+            <Download className="mr-2 h-4 w-4" />
+            Download Warehouse Template
+          </Button>
         </CardContent>
       </Card>
     </div>

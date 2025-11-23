@@ -1,55 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, AlertTriangle, CheckCircle } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from "@/hooks/use-toast";
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { vessels as defaultVessels, Vessel } from '@/lib/data';
+import { Download } from 'lucide-react';
+import { vessels as defaultVessels } from '@/lib/data';
+import { saveAs } from 'file-saver';
+import * as XLSX from 'xlsx';
+import { DATA_URLS } from '@/lib/config';
 
 function VesselAdminDashboard() {
-  const [vessels, setVessels] = useLocalStorage<Vessel[]>('vessel_data', defaultVessels);
-  const [textData, setTextData] = useState('');
-  const { toast } = useToast();
-
-  useEffect(() => {
-    // Pre-populate the textarea with the current data from local storage
-    if (vessels) {
-      setTextData(JSON.stringify(vessels, null, 2));
-    }
-  }, [vessels]);
-
-  const handleSave = () => {
-    try {
-      const parsedData = JSON.parse(textData);
-      // You might want to add validation here to ensure parsedData is an array of Vessel
-      setVessels(parsedData);
-      toast({
-        title: "Save Successful",
-        description: "Vessel data has been saved to local storage.",
-        action: <CheckCircle className="text-green-500" />,
-      });
-    } catch (error) {
-      console.error("Failed to parse and save vessel data:", error);
-      toast({
-        variant: "destructive",
-        title: "Save Failed",
-        description: "The text is not valid JSON. Please correct it and try again.",
-        action: <AlertTriangle className="text-white" />,
-      });
-    }
+  const handleDownloadTemplate = () => {
+    const worksheet = XLSX.utils.json_to_sheet(defaultVessels);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Vessels');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    saveAs(data, 'vessel_template.xlsx');
   };
-
-  const loadDefaultData = () => {
-    setVessels(defaultVessels);
-    setTextData(JSON.stringify(defaultVessels, null, 2));
-    toast({
-        title: "Default Data Loaded",
-        description: "The default vessel data has been loaded. Click 'Save' to apply.",
-      });
-  }
 
   return (
     <div className="space-y-8">
@@ -57,26 +24,27 @@ function VesselAdminDashboard() {
         <CardHeader>
           <CardTitle>Vessel Data Management</CardTitle>
           <CardDescription>
-            Edit the vessel data in the JSON format below. Click 'Save' to update the application data in your browser.
+            Download the Excel template to manage your vessel data. After updating the file, you must host it at a public URL.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Textarea
-            value={textData}
-            onChange={(e) => setTextData(e.target.value)}
-            rows={20}
-            className="font-mono text-sm"
-            placeholder="Enter vessel data in JSON format..."
-          />
-          <div className="flex justify-between gap-2">
-            <Button onClick={handleSave}>
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="font-semibold text-blue-800">Instructions:</h3>
+                <ol className="list-decimal list-inside mt-2 text-sm text-blue-700 space-y-1">
+                    <li>Click the button below to download the Excel template.</li>
+                    <li>Edit the file to update your vessel information.</li>
+                    <li>Upload the saved file to a public hosting service of your choice.</li>
+                    <li>
+                        Update the URL in <code className="bg-blue-100 p-1 rounded">src/lib/config.ts</code> to point to your new file location.
+                        The current URL is: <a href={DATA_URLS.vessels} target="_blank" rel="noopener noreferrer" className="underline">{DATA_URLS.vessels}</a>
+                    </li>
+                    <li>The homepage will automatically reflect the changes from the new file.</li>
+                </ol>
+            </div>
+            <Button onClick={handleDownloadTemplate}>
+                <Download className="mr-2 h-4 w-4" />
+                Download Vessel Template
             </Button>
-            <Button variant="outline" onClick={loadDefaultData}>
-              Load Default Data
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
