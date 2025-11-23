@@ -424,8 +424,8 @@ export default function WarehouseAdminPage() {
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Warehouse Admin Login</CardTitle>
-            <CardContent><p>You must be logged in to view this page.</p></CardContent>
           </CardHeader>
+          <CardContent><p>You must be logged in to view this page.</p></CardContent>
         </Card>
       </div>
     );
@@ -460,3 +460,5 @@ export default function WarehouseAdminPage() {
     </main>
   );
 }
+
+    

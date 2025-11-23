@@ -228,7 +228,7 @@ function VesselAdminDashboard() {
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a port" />
-                    </TriggerTrigger>
+                    </Trigger>
                     <SelectContent>
                       {portNames
                         .filter(port => port !== vessel.origin)
@@ -307,8 +307,8 @@ export default function VesAdmPage() {
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Vessel Admin Login</CardTitle>
-             <CardContent><p>You must be logged in to view this page.</p></CardContent>
           </CardHeader>
+          <CardContent><p>You must be logged in to view this page.</p></CardContent>
         </Card>
       </div>
     );
@@ -343,3 +343,5 @@ export default function VesAdmPage() {
     </main>
   );
 }
+
+    
