@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { Anchor, ArrowRight } from "lucide-react";
 import { Loader } from "lucide-react";
 import * as XLSX from 'xlsx';
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from 'lucide-react';
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -239,60 +241,64 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch and parse vessel data
-        const vResponse = await fetch('/vessel_data.xlsx');
-        if (!vResponse.ok) throw new Error('Vessel data file not found. Please upload vessel_data.xlsx to the public folder.');
-        const vData = await vResponse.arrayBuffer();
-        const vWorkbook = XLSX.read(vData, { type: 'array' });
-        const vSheetName = vWorkbook.SheetNames[0];
-        const vWorksheet = vWorkbook.Sheets[vSheetName];
-        const vesselJson: any[] = XLSX.utils.sheet_to_json(vWorksheet);
-        setVessels(vesselJson as Vessel[]);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Add a cache-busting query parameter
+      const cacheBust = `?t=${new Date().getTime()}`;
 
-        // Fetch and parse warehouse data
-        const wResponse = await fetch('/warehouse_data.xlsx');
-        if (!wResponse.ok) throw new Error('Warehouse data file not found. Please upload warehouse_data.xlsx to the public folder.');
-        const wData = await wResponse.arrayBuffer();
-        const wWorkbook = XLSX.read(wData, { type: 'array' });
-        const wSheetName = wWorkbook.SheetNames[0];
-        const wWorksheet = wWorkbook.Sheets[wSheetName];
-        const warehouseJson: any[] = XLSX.utils.sheet_to_json(wWorksheet);
-        
-        // Group bins by warehouse
-        const warehousesWithBins: { [key: string]: Warehouse } = {};
-        warehouseJson.forEach(row => {
-          const whId = row.warehouseId;
-          if (!warehousesWithBins[whId]) {
-            warehousesWithBins[whId] = {
-              id: whId,
-              name: row.warehouseName,
-              totalCapacity: row.totalCapacity,
-              bins: []
-            };
-          }
-          warehousesWithBins[whId].bins.push({
-            id: row.binId,
-            commodity: row.commodity,
-            tonnage: row.tonnage,
-            code: row.code
-          });
+      // Fetch and parse vessel data
+      const vResponse = await fetch(`/vessel_data.xlsx${cacheBust}`);
+      if (!vResponse.ok) throw new Error('Vessel data file not found. Please upload vessel_data.xlsx to the public folder.');
+      const vData = await vResponse.arrayBuffer();
+      const vWorkbook = XLSX.read(vData, { type: 'array' });
+      const vSheetName = vWorkbook.SheetNames[0];
+      const vWorksheet = vWorkbook.Sheets[vSheetName];
+      const vesselJson: any[] = XLSX.utils.sheet_to_json(vWorksheet);
+      setVessels(vesselJson as Vessel[]);
+
+      // Fetch and parse warehouse data
+      const wResponse = await fetch(`/warehouse_data.xlsx${cacheBust}`);
+      if (!wResponse.ok) throw new Error('Warehouse data file not found. Please upload warehouse_data.xlsx to the public folder.');
+      const wData = await wResponse.arrayBuffer();
+      const wWorkbook = XLSX.read(wData, { type: 'array' });
+      const wSheetName = wWorkbook.SheetNames[0];
+      const wWorksheet = wWorkbook.Sheets[wSheetName];
+      const warehouseJson: any[] = XLSX.utils.sheet_to_json(wWorksheet);
+      
+      // Group bins by warehouse
+      const warehousesWithBins: { [key: string]: Warehouse } = {};
+      warehouseJson.forEach(row => {
+        const whId = row.warehouseId;
+        if (!warehousesWithBins[whId]) {
+          warehousesWithBins[whId] = {
+            id: whId,
+            name: row.warehouseName,
+            totalCapacity: row.totalCapacity,
+            bins: []
+          };
+        }
+        warehousesWithBins[whId].bins.push({
+          id: row.binId,
+          commodity: row.commodity,
+          tonnage: row.tonnage,
+          code: row.code
         });
+      });
 
-        setWarehouses(Object.values(warehousesWithBins));
+      setWarehouses(Object.values(warehousesWithBins));
 
-      } catch (e: any) {
-        setError(e.message);
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
+    } catch (e: any) {
+      setError(e.message);
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -300,9 +306,16 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
       <div className="w-full max-w-7xl">
         <div className="flex justify-between items-center w-full mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">
-             ARIB Vessel Tracker
+            <div className="flex-1"></div>
+            <h1 className="text-3xl font-bold text-gray-800 flex-grow text-center">
+             ARIB Vessel
             </h1>
+            <div className="flex-1 flex justify-end">
+              <Button onClick={fetchData}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Update
+              </Button>
+            </div>
         </div>
         
         {loading ? (
@@ -324,7 +337,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="text-center py-10 text-gray-500">
-                <p>No vessel data found in the Excel file.</p>
+                <p>No vessel data found. Please ensure 'vessel_data.xlsx' is in the public folder and click 'Update'.</p>
               </div>
             )}
           </>
@@ -332,7 +345,7 @@ export default function Home() {
 
 
         <h1 className="text-3xl font-bold my-8 text-center text-gray-800">
-          Arib Warehouse Status
+          ARIB Warehouses
         </h1>
         
         {loading ? (
@@ -353,7 +366,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="text-center py-10 text-gray-500">
-                 <p>No warehouse data found in the Excel file.</p>
+                 <p>No warehouse data found. Please ensure 'warehouse_data.xlsx' is in the public folder and click 'Update'.</p>
               </div>
             )}
           </>
