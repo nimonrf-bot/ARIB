@@ -1,11 +1,12 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { type Vessel, type Warehouse } from "@/lib/data";
+import { type Vessel, type Warehouse, vessels as defaultVessels, warehouses as defaultWarehouses } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { Anchor, ArrowRight } from "lucide-react";
+import { Anchor, ArrowRight, RefreshCw } from "lucide-react";
 import { Loader } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -283,6 +284,17 @@ export default function Home() {
     // Simulate loading
     setLoading(false);
   }, []);
+  
+  const handleUpdate = () => {
+    try {
+      setVessels(defaultVessels);
+      setWarehouses(defaultWarehouses);
+      alert('Page data has been updated to the default set.');
+    } catch (error) {
+      console.error("Error updating data:", error);
+      alert('An error occurred while updating the data.');
+    }
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
@@ -291,6 +303,9 @@ export default function Home() {
             <h1 className="text-3xl font-bold text-gray-800">
              ARIB Vessel Tracker
             </h1>
+            <Button onClick={handleUpdate}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Update
+            </Button>
         </div>
         
         {loading ? (
@@ -298,11 +313,19 @@ export default function Home() {
             <Loader className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            {(vessels || []).map((vessel) => (
-              <VesselJourneyCard key={vessel.id} vessel={vessel} />
-            ))}
-          </div>
+          <>
+            {vessels && vessels.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                {vessels.map((vessel) => (
+                  <VesselJourneyCard key={vessel.id} vessel={vessel} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 text-gray-500">
+                <p>No vessel data available. Click "Update" to load default data.</p>
+              </div>
+            )}
+          </>
         )}
 
 
@@ -315,11 +338,19 @@ export default function Home() {
             <Loader className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
-            {(warehouses || []).map((warehouse) => (
-              <WarehouseCard key={warehouse.id} warehouse={warehouse} />
-            ))}
-          </div>
+          <>
+            {warehouses && warehouses.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+                {warehouses.map((warehouse) => (
+                  <WarehouseCard key={warehouse.id} warehouse={warehouse} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 text-gray-500">
+                 <p>No warehouse data available. Click "Update" to load default data.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </main>
