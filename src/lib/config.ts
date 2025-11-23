@@ -5,6 +5,6 @@
  * Update the URLs to point to your publicly hosted Excel files.
  */
 export const DATA_URLS = {
-  vessels: 'https://aribgroup.netlify.app/vessel_data.xlsx',
+  vessels: 'https://docs.google.com/spreadsheets/d/16jp0StvVsk7E18ymErEKTgvPxFR4UwZN/edit?usp=sharing&ouid=111256136575385814927&rtpof=true&sd=true',
   warehouses: 'https://aribgroup.netlify.app/warehouse_data.xlsx',
 };
