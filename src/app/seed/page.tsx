@@ -13,7 +13,7 @@ import { firebaseApp } from '@/firebase/config';
 export default function SeedPage() {
   const firestore = useFirestore();
   const { user, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [message, setMessage] = useState('');
 
   const handleLogin = async () => {
@@ -23,17 +23,17 @@ export default function SeedPage() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Authentication failed:", error);
-      setMessage(`Login failed. Code: ${error.code}\nMessage: ${error.message}`);
+      setMessage(`Login failed. An unknown error occurred. Please check the browser console for details.`);
     }
   };
 
   const handleSeed = async () => {
-    if (!firestore) {
-      setMessage('Firestore is not available. Please check your Firebase configuration.');
+    if (!firestore || !user) {
+      setMessage('You must be logged in to seed the database.');
       return;
     }
-    setLoading(true);
-    setMessage('');
+    setSeeding(true);
+    setMessage('Seeding in progress...');
     try {
       const batch = writeBatch(firestore);
 
@@ -56,9 +56,9 @@ export default function SeedPage() {
     } catch (error) {
       console.error("Error seeding database:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      setMessage(`An error occurred: ${errorMessage}`);
+      setMessage(`An error occurred while seeding: ${errorMessage}`);
     } finally {
-      setLoading(false);
+      setSeeding(false);
     }
   };
 
@@ -66,6 +66,7 @@ export default function SeedPage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
         <Loader className="h-8 w-8 animate-spin" />
+        <p className="mt-4 text-muted-foreground">Authenticating...</p>
       </main>
     );
   }
@@ -77,23 +78,23 @@ export default function SeedPage() {
           <CardTitle>Seed Database</CardTitle>
           {user ? (
             <CardDescription>
-              Click the button below to populate your Firestore database with the initial set of vessel and warehouse data. This is a one-time action needed to get the application running.
+              Welcome, {user.email}! Click the button below to populate your Firestore database with the initial set of vessel and warehouse data.
             </CardDescription>
           ) : (
             <CardDescription>
-              Please log in to seed the database.
+              Please log in with Google to seed the database. This is required to get the application running with data.
             </CardDescription>
           )}
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
           {user ? (
-            <Button onClick={handleSeed} disabled={loading} size="lg">
-              {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? 'Seeding...' : 'Seed Database'}
+            <Button onClick={handleSeed} disabled={seeding || authLoading} size="lg">
+              {seeding && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+              {seeding ? 'Seeding...' : 'Seed Database'}
             </Button>
           ) : (
-            <Button onClick={handleLogin} size="lg">
-              Log in with Google to Seed
+            <Button onClick={handleLogin} size="lg" disabled={authLoading}>
+              {authLoading ? 'Loading...' : 'Log in with Google to Seed'}
             </Button>
           )}
           {message && (
