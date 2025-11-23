@@ -60,9 +60,13 @@ function useLocalStorage<T>(key: string, initialValue: T) {
   };
   
   useEffect(() => {
-    const item = window.localStorage.getItem(key);
-    if (!item) {
-      setValue(initialValue);
+    if (typeof window !== 'undefined') {
+      const item = window.localStorage.getItem(key);
+      if (!item) {
+        window.localStorage.setItem(key, JSON.stringify(initialValue));
+      } else {
+        setStoredValue(JSON.parse(item));
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
