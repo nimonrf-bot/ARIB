@@ -1,134 +1,81 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { warehouses as defaultWarehouses } from '@/lib/data';
-import { Download, Upload, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { Input } from '@/components/ui/input';
+import { Save, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
-
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { warehouses as defaultWarehouses, Warehouse } from '@/lib/data';
 
 function WarehouseAdminDashboard() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [warehouses, setWarehouses] = useLocalStorage<Warehouse[]>('warehouse_data', defaultWarehouses);
+  const [textData, setTextData] = useState('');
   const { toast } = useToast();
 
-  const handleDownloadTemplate = () => {
-    // We need to flatten the data structure for the Excel file
-    const flattenedData = defaultWarehouses.flatMap(wh => 
-      wh.bins.map(bin => ({
-        warehouseId: wh.id,
-        warehouseName: wh.name,
-        totalCapacity: wh.totalCapacity,
-        binId: bin.id,
-        commodity: bin.commodity,
-        tonnage: bin.tonnage,
-        code: bin.code,
-      }))
-    );
-    
-    const worksheet = XLSX.utils.json_to_sheet(flattenedData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Warehouses');
-    XLSX.writeFile(workbook, 'warehouse_template.xlsx');
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setSelectedFile(event.target.files[0]);
+  useEffect(() => {
+    // Pre-populate the textarea with the current data from local storage
+    if (warehouses) {
+      setTextData(JSON.stringify(warehouses, null, 2));
     }
-  };
+  }, [warehouses]);
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-       toast({
-        variant: "destructive",
-        title: "No File Selected",
-        description: "Please select a warehouse data file to upload.",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('type', 'warehouse');
-
+  const handleSave = () => {
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Upload failed');
-      }
-
+      const parsedData = JSON.parse(textData);
+      // You could add Zod validation here if needed
+      setWarehouses(parsedData);
       toast({
-        title: "Upload Successful",
-        description: "Warehouse data file has been updated.",
+        title: "Save Successful",
+        description: "Warehouse data has been saved to local storage.",
         action: <CheckCircle className="text-green-500" />,
       });
-
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Failed to parse and save warehouse data:", error);
       toast({
         variant: "destructive",
-        title: "Upload Failed",
-        description: error.message || "An unknown error occurred.",
+        title: "Save Failed",
+        description: "The text is not valid JSON. Please correct it and try again.",
         action: <AlertTriangle className="text-white" />,
       });
-    } finally {
-      setIsUploading(false);
-      setSelectedFile(null);
-      // Reset the file input
-      const fileInput = document.getElementById('warehouse-file-input') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = '';
-      }
     }
   };
+  
+  const loadDefaultData = () => {
+    setWarehouses(defaultWarehouses);
+    setTextData(JSON.stringify(defaultWarehouses, null, 2));
+    toast({
+        title: "Default Data Loaded",
+        description: "The default warehouse data has been loaded. Click 'Save' to apply.",
+      });
+  }
 
   return (
     <div className="space-y-8">
-       <Card>
+      <Card>
         <CardHeader>
           <CardTitle>Warehouse Data Management</CardTitle>
-           <CardDescription>
-            Download the Excel template, update it with the latest warehouse data, and upload it here.
+          <CardDescription>
+            Edit the warehouse data in the JSON format below. Click 'Save' to update the application data in your browser.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-           <div className="space-y-2">
-             <h3 className="font-semibold">Step 1: Download Template</h3>
-             <p className="text-muted-foreground text-sm">
-                If you don't have the template, download it to get the correct format.
-            </p>
-            <Button onClick={handleDownloadTemplate}>
-              <Download className="mr-2 h-4 w-4" />
-              Download Warehouse Template
+        <CardContent className="space-y-4">
+          <Textarea
+            value={textData}
+            onChange={(e) => setTextData(e.target.value)}
+            rows={20}
+            className="font-mono text-sm"
+            placeholder="Enter warehouse data in JSON format..."
+          />
+          <div className="flex justify-between gap-2">
+            <Button onClick={handleSave}>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
             </Button>
-          </div>
-          <div className="space-y-3">
-             <h3 className="font-semibold">Step 2: Upload Updated File</h3>
-             <p className="text-muted-foreground text-sm">
-                Upload the updated `warehouse_data.xlsx` file. This will replace the existing data on the main dashboard.
-            </p>
-            <div className="flex items-center gap-4">
-                <Input id="warehouse-file-input" type="file" accept=".xlsx" onChange={handleFileChange} className="max-w-xs" />
-                <Button onClick={handleUpload} disabled={isUploading || !selectedFile}>
-                  {isUploading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="mr-2 h-4 w-4" />
-                  )}
-                  Upload File
-                </Button>
-            </div>
-            {selectedFile && <p className="text-sm text-muted-foreground">Selected: {selectedFile.name}</p>}
+            <Button variant="outline" onClick={loadDefaultData}>
+              Load Default Data
+            </Button>
           </div>
         </CardContent>
       </Card>

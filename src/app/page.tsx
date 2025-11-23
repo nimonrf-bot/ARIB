@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { Anchor, ArrowRight } from "lucide-react";
 import { Loader } from "lucide-react";
-import * as XLSX from 'xlsx';
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -236,71 +236,22 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 }
 
 export default function Home() {
-  const [vessels, setVessels] = useState<Vessel[]>([]);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [vessels, setVessels] = useLocalStorage<Vessel[]>('vessel_data', []);
+  const [warehouses, setWarehouses] = useLocalStorage<Warehouse[]>('warehouse_data', []);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Add a cache-busting query parameter
-      const cacheBust = `?t=${new Date().getTime()}`;
-
-      // Fetch and parse vessel data
-      const vResponse = await fetch(`/vessel_data.xlsx${cacheBust}`);
-      if (!vResponse.ok) throw new Error('Vessel data file not found. Please upload vessel_data.xlsx to the public folder.');
-      const vData = await vResponse.arrayBuffer();
-      const vWorkbook = XLSX.read(vData, { type: 'array' });
-      const vSheetName = vWorkbook.SheetNames[0];
-      const vWorksheet = vWorkbook.Sheets[vSheetName];
-      const vesselJson: any[] = XLSX.utils.sheet_to_json(vWorksheet);
-      setVessels(vesselJson as Vessel[]);
-
-      // Fetch and parse warehouse data
-      const wResponse = await fetch(`/warehouse_data.xlsx${cacheBust}`);
-      if (!wResponse.ok) throw new Error('Warehouse data file not found. Please upload warehouse_data.xlsx to the public folder.');
-      const wData = await wResponse.arrayBuffer();
-      const wWorkbook = XLSX.read(wData, { type: 'array' });
-      const wSheetName = wWorkbook.SheetNames[0];
-      const wWorksheet = wWorkbook.Sheets[wSheetName];
-      const warehouseJson: any[] = XLSX.utils.sheet_to_json(wWorksheet);
-      
-      // Group bins by warehouse
-      const warehousesWithBins: { [key: string]: Warehouse } = {};
-      warehouseJson.forEach(row => {
-        const whId = row.warehouseId;
-        if (!warehousesWithBins[whId]) {
-          warehousesWithBins[whId] = {
-            id: whId,
-            name: row.warehouseName,
-            totalCapacity: row.totalCapacity,
-            bins: []
-          };
-        }
-        warehousesWithBins[whId].bins.push({
-          id: row.binId,
-          commodity: row.commodity,
-          tonnage: row.tonnage,
-          code: row.code
-        });
-      });
-
-      setWarehouses(Object.values(warehousesWithBins));
-
-    } catch (e: any) {
-      setError(e.message);
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
+  // This effect will run once on mount, and then whenever the data in localStorage changes.
   useEffect(() => {
-    fetchData();
-  }, []);
+    setLoading(false);
+  }, [vessels, warehouses]);
+
+  // A simple function to force a re-render by updating the state from localStorage
+  const refreshData = () => {
+    const freshVessels = JSON.parse(window.localStorage.getItem('vessel_data') || '[]');
+    const freshWarehouses = JSON.parse(window.localStorage.getItem('warehouse_data') || '[]');
+    setVessels(freshVessels);
+    setWarehouses(freshWarehouses);
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
@@ -311,9 +262,9 @@ export default function Home() {
              ARIB Vessel
             </h1>
             <div className="flex-1 flex justify-end">
-              <Button onClick={fetchData}>
+              <Button onClick={refreshData}>
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Update
+                  Refresh
               </Button>
             </div>
         </div>
@@ -322,25 +273,16 @@ export default function Home() {
            <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
-        ) : error ? (
-          <div className="text-center py-10 text-red-500 bg-red-50 p-4 rounded-lg">
-            <p className="font-bold">Error loading data</p>
-            <p>{error}</p>
+        ) : vessels && vessels.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            {vessels.map((vessel) => (
+              <VesselJourneyCard key={vessel.id} vessel={vessel} />
+            ))}
           </div>
         ) : (
-          <>
-            {vessels && vessels.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                {vessels.map((vessel) => (
-                  <VesselJourneyCard key={vessel.id} vessel={vessel} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 text-gray-500">
-                <p>No vessel data found. Please ensure 'vessel_data.xlsx' is in the public folder and click 'Update'.</p>
-              </div>
-            )}
-          </>
+          <div className="text-center py-10 text-gray-500">
+            <p>No vessel data found. Please go to the <a href="/admin/ves_adm" className="underline">Vessel Admin</a> page to add data.</p>
+          </div>
         )}
 
 
@@ -352,24 +294,16 @@ export default function Home() {
           <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
-        ) : error ? (
-           <div className="text-center py-10 text-red-500 bg-red-50 p-4 rounded-lg">
-             {/* Error already shown above, so no need to repeat */}
-           </div>
+        ) : warehouses && warehouses.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+            {warehouses.map((warehouse) => (
+              <WarehouseCard key={warehouse.id} warehouse={warehouse} />
+            ))}
+          </div>
         ) : (
-          <>
-            {warehouses && warehouses.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
-                {warehouses.map((warehouse) => (
-                  <WarehouseCard key={warehouse.id} warehouse={warehouse} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 text-gray-500">
-                 <p>No warehouse data found. Please ensure 'warehouse_data.xlsx' is in the public folder and click 'Update'.</p>
-              </div>
-            )}
-          </>
+          <div className="text-center py-10 text-gray-500">
+            <p>No warehouse data found. Please go to the <a href="/admin/warehouses" className="underline">Warehouse Admin</a> page to add data.</p>
+          </div>
         )}
       </div>
     </main>
