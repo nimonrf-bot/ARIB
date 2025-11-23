@@ -1,0 +1,29 @@
+
+[
+    {
+        "id": 1,
+        "cargo": "Corn",
+        "vesselName": "Omskiy-130",
+        "vesselId": "OM-130",
+        "departureDate": "2024-05-10",
+        "etaDate": "2024-05-25",
+        "anchored": true,
+        "origin": "Caspian port",
+        "destination": "Arib port",
+        "progress": 20,
+        "status": "Arrived at Caspian Port, waiting for port entry."
+    },
+    {
+        "id": 2,
+        "cargo": "Barley",
+        "vesselName": "Omskiy-131",
+        "vesselId": "OM-131",
+        "departureDate": "2024-05-12",
+        "etaDate": "2024-05-28",
+        "anchored": false,
+        "origin": "Anzali port",
+        "destination": "Astrakhan port",
+        "progress": 50,
+        "status": "In transit."
+    }
+]

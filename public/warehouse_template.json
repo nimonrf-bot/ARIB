@@ -1,0 +1,30 @@
+
+[
+    {
+        "warehouseId": 1,
+        "warehouseName": "Warehouse 9",
+        "totalCapacity": 12000,
+        "binId": "9A",
+        "commodity": "Corn",
+        "tonnage": 2900,
+        "code": "AFRA"
+    },
+    {
+        "warehouseId": 1,
+        "warehouseName": "Warehouse 9",
+        "totalCapacity": 12000,
+        "binId": "9B",
+        "commodity": "Barley",
+        "tonnage": 3000,
+        "code": "TEHR"
+    },
+    {
+        "warehouseId": 2,
+        "warehouseName": "Warehouse 7",
+        "totalCapacity": 15000,
+        "binId": "7A",
+        "commodity": "Rice",
+        "tonnage": 4000,
+        "code": "SINO"
+    }
+]

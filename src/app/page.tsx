@@ -1,12 +1,12 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { type Vessel, type Warehouse, vessels as defaultVessels, warehouses as defaultWarehouses } from "@/lib/data";
+import { type Vessel, type Warehouse } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { Anchor, ArrowRight, RefreshCw } from "lucide-react";
+import { Anchor, ArrowRight } from "lucide-react";
 import { Loader } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import * as XLSX from 'xlsx';
 
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -233,68 +233,68 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
   )
 }
 
-function useLocalStorage<T>(key: string, initialValue: T) {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === 'undefined') {
-      return initialValue;
-    }
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.log(error);
-      return initialValue;
-    }
-  });
-
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  // This effect synchronizes the state with localStorage when it changes in another tab.
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === key && e.newValue) {
-        setStoredValue(JSON.parse(e.newValue));
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [key]);
-
-  return [storedValue, setValue] as const;
-}
-
 export default function Home() {
-  const [vessels, setVessels] = useLocalStorage<Vessel[]>('vessels', []);
-  const [warehouses, setWarehouses] = useLocalStorage<Warehouse[]>('warehouses', []);
+  const [vessels, setVessels] = useState<Vessel[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading
-    setLoading(false);
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch and parse vessel data
+        const vResponse = await fetch('/vessel_data.xlsx');
+        if (!vResponse.ok) throw new Error('Vessel data file not found. Please upload vessel_data.xlsx to the public folder.');
+        const vData = await vResponse.arrayBuffer();
+        const vWorkbook = XLSX.read(vData, { type: 'array' });
+        const vSheetName = vWorkbook.SheetNames[0];
+        const vWorksheet = vWorkbook.Sheets[vSheetName];
+        const vesselJson: any[] = XLSX.utils.sheet_to_json(vWorksheet);
+        setVessels(vesselJson as Vessel[]);
+
+        // Fetch and parse warehouse data
+        const wResponse = await fetch('/warehouse_data.xlsx');
+        if (!wResponse.ok) throw new Error('Warehouse data file not found. Please upload warehouse_data.xlsx to the public folder.');
+        const wData = await wResponse.arrayBuffer();
+        const wWorkbook = XLSX.read(wData, { type: 'array' });
+        const wSheetName = wWorkbook.SheetNames[0];
+        const wWorksheet = wWorkbook.Sheets[wSheetName];
+        const warehouseJson: any[] = XLSX.utils.sheet_to_json(wWorksheet);
+        
+        // Group bins by warehouse
+        const warehousesWithBins: { [key: string]: Warehouse } = {};
+        warehouseJson.forEach(row => {
+          const whId = row.warehouseId;
+          if (!warehousesWithBins[whId]) {
+            warehousesWithBins[whId] = {
+              id: whId,
+              name: row.warehouseName,
+              totalCapacity: row.totalCapacity,
+              bins: []
+            };
+          }
+          warehousesWithBins[whId].bins.push({
+            id: row.binId,
+            commodity: row.commodity,
+            tonnage: row.tonnage,
+            code: row.code
+          });
+        });
+
+        setWarehouses(Object.values(warehousesWithBins));
+
+      } catch (e: any) {
+        setError(e.message);
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
-  
-  const handleUpdate = () => {
-    try {
-      setVessels(defaultVessels);
-      setWarehouses(defaultWarehouses);
-      alert('Page data has been updated to the default set.');
-    } catch (error) {
-      console.error("Error updating data:", error);
-      alert('An error occurred while updating the data.');
-    }
-  };
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
@@ -303,14 +303,16 @@ export default function Home() {
             <h1 className="text-3xl font-bold text-gray-800">
              ARIB Vessel Tracker
             </h1>
-            <Button onClick={handleUpdate}>
-              <RefreshCw className="mr-2 h-4 w-4" /> Update
-            </Button>
         </div>
         
         {loading ? (
            <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-10 text-red-500 bg-red-50 p-4 rounded-lg">
+            <p className="font-bold">Error loading data</p>
+            <p>{error}</p>
           </div>
         ) : (
           <>
@@ -322,7 +324,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="text-center py-10 text-gray-500">
-                <p>No vessel data available. Click "Update" to load default data.</p>
+                <p>No vessel data found in the Excel file.</p>
               </div>
             )}
           </>
@@ -337,6 +339,10 @@ export default function Home() {
           <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
+        ) : error ? (
+           <div className="text-center py-10 text-red-500 bg-red-50 p-4 rounded-lg">
+             {/* Error already shown above, so no need to repeat */}
+           </div>
         ) : (
           <>
             {warehouses && warehouses.length > 0 ? (
@@ -347,7 +353,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="text-center py-10 text-gray-500">
-                 <p>No warehouse data available. Click "Update" to load default data.</p>
+                 <p>No warehouse data found in the Excel file.</p>
               </div>
             )}
           </>
