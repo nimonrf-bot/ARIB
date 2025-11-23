@@ -63,7 +63,6 @@ function VesselAdminDashboard() {
     const newVessels = [...(vesselData || [])];
     const vessel = newVessels[index];
 
-    // Date validation
     if (field === 'etaDate') {
         const departureDate = new Date(vessel.departureDate);
         const newEtaDate = new Date(value as string);

@@ -48,7 +48,6 @@ function WarehouseAdminDashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentUser, setCurrentUser] = useState('Admin');
 
-  // State for the inventory dialog
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
   const [selectedBinId, setSelectedBinId] = useState<string>('');
   const [inventoryAmount, setInventoryAmount] = useState<number>(0);
@@ -219,7 +218,6 @@ function WarehouseAdminDashboard() {
     setWarehouseData(newWarehouses);
     alert(`Successfully ${action === 'add' ? 'added' : 'removed'} ${inventoryAmount}T. Please review and save changes.`);
     
-    // Reset dialog fields and close it
     setSelectedWarehouseId('');
     setSelectedBinId('');
     setInventoryAmount(0);
