@@ -1,12 +1,12 @@
 {
   "theme_color": "#E6F3FF",
-  "background_color": "#E6F3FF",
+  "background_color": "#FFFFFF",
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
   "name": "ARIB Vessel Tracker",
   "short_name": "ARIB",
-  "description": "Ops Status Dashboard for a logistics company",
+  "description": "Ops Status Dashboard for ARIB",
   "icons": [
     {
       "src": "/icon-192x192.png",
