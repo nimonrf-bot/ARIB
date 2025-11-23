@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth, useCollection, useFirestore } from '@/firebase';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
 
 interface ChangeLog {
   id?: string;
@@ -61,8 +61,9 @@ function WarehouseAdminDashboard() {
   const handleSaveChanges = async () => {
     if (!firestore || !warehouseData) return;
 
-    const savedWarehouses = await collection(firestore, 'warehouses').get();
-    const oldWarehouseData: Warehouse[] = savedWarehouses.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Warehouse));
+    const warehousesCollectionRef = collection(firestore, 'warehouses');
+    const savedWarehousesSnapshot = await getDocs(warehousesCollectionRef);
+    const oldWarehouseData: Warehouse[] = savedWarehousesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Warehouse));
 
     const changes: string[] = [];
 
@@ -437,3 +438,5 @@ export default function WarehouseAdminPage() {
     </main>
   );
 }
+
+    

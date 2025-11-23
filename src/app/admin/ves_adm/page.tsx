@@ -15,7 +15,7 @@ import { Loader } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth, useCollection, useFirestore } from '@/firebase';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
 
 const portNames = [
   'Caspian port',
@@ -87,8 +87,9 @@ function VesselAdminDashboard() {
   const handleSaveChanges = async () => {
     if (!firestore || !vesselData) return;
 
-    const savedVessels = await collection(firestore, 'vessels').get();
-    const oldVesselData: Vessel[] = savedVessels.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Vessel));
+    const vesselsCollectionRef = collection(firestore, 'vessels');
+    const savedVesselsSnapshot = await getDocs(vesselsCollectionRef);
+    const oldVesselData: Vessel[] = savedVesselsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Vessel));
 
     const changes: string[] = [];
 
@@ -321,3 +322,5 @@ export default function VesAdmPage() {
     </main>
   );
 }
+
+    
