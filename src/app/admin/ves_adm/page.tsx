@@ -2,21 +2,20 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { vessels as defaultVessels, type Vessel } from '@/lib/data';
 import { updateVessels } from '@/ai/flows/update-vessels-flow';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader, ShieldAlert } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth, useCollection, useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs, type DocumentData } from 'firebase/firestore';
 import { VESSEL_ADMINS } from '@/lib/admins';
+import type { Vessel } from '@/lib/data';
 
 const portNames = [
   'Caspian port',
@@ -30,7 +29,7 @@ const portNames = [
   'Ola port',
 ];
 
-interface ChangeLog {
+interface ChangeLog extends DocumentData {
   id?: string;
   user: string;
   timestamp: string;
@@ -41,8 +40,8 @@ function VesselAdminDashboard() {
   const firestore = useFirestore();
   const { user } = useAuth();
 
-  const { data: vesselData, setData: setVesselData } = useCollection<Vessel>('vessels');
-  const { data: logs, add: addLog } = useCollection<ChangeLog>('vesselLogs');
+  const { data: vesselData, setData: setVesselData, loading: vesselsLoading } = useCollection<Vessel>('vessels');
+  const { data: logs, add: addLog, loading: logsLoading } = useCollection<ChangeLog>('vesselLogs');
 
   const sortedLogs = useMemo(() => {
     if (!logs) return [];
@@ -54,16 +53,17 @@ function VesselAdminDashboard() {
   const [currentUser, setCurrentUser] = useState('Admin');
 
    useEffect(() => {
-    if (user) {
-      setCurrentUser(user.email || 'Admin');
+    if (user && user.email) {
+      setCurrentUser(user.email);
     }
   }, [user]);
 
   const handleVesselChange = (index: number, field: keyof Vessel, value: string | number | boolean) => {
-    const newVessels = [...(vesselData || [])];
+    if (!vesselData) return;
+    const newVessels = [...vesselData];
     const vessel = newVessels[index];
 
-    if (field === 'etaDate') {
+    if (field === 'etaDate' && vessel.departureDate) {
         const departureDate = new Date(vessel.departureDate);
         const newEtaDate = new Date(value as string);
         if (newEtaDate <= departureDate) {
@@ -71,7 +71,7 @@ function VesselAdminDashboard() {
             return;
         }
     }
-    if (field === 'departureDate') {
+    if (field === 'departureDate' && vessel.etaDate) {
         const etaDate = new Date(vessel.etaDate);
         const newDepartureDate = new Date(value as string);
         if (etaDate <= newDepartureDate) {
@@ -92,11 +92,13 @@ function VesselAdminDashboard() {
     const oldVesselData: Vessel[] = savedVesselsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Vessel));
 
     const changes: string[] = [];
+    const vesselMap = new Map(oldVesselData.map(v => [v.id, v]));
 
     vesselData.forEach((newVessel) => {
-      const oldVessel = oldVesselData.find(v => v.id === newVessel.id);
+      const oldVessel = vesselMap.get(newVessel.id);
       if (oldVessel) {
         (Object.keys(newVessel) as Array<keyof Vessel>).forEach(field => {
+          if (field === 'id') return;
           const oldValue = oldVessel[field];
           const newValue = newVessel[field];
            if (String(newValue) !== String(oldValue)) {
@@ -112,14 +114,14 @@ function VesselAdminDashboard() {
         timestamp: new Date().toISOString(),
         changes: changes,
       };
-      addLog(newLog);
+      await addLog(newLog);
     }
     
     const batch = writeBatch(firestore);
     vesselData.forEach((vessel) => {
       const { id, ...data } = vessel;
       const docRef = doc(firestore, 'vessels', String(id));
-      batch.set(docRef, data);
+      batch.set(docRef, data, { merge: true });
     });
     await batch.commit();
 
@@ -157,10 +159,10 @@ function VesselAdminDashboard() {
     }
   };
 
-  if (!vesselData) {
+  if (vesselsLoading || logsLoading) {
     return <div className="flex justify-center items-center h-screen"><Loader className="h-8 w-8 animate-spin" /></div>;
   }
-
+  
   return (
     <div className="space-y-8">
       <Card>
@@ -186,7 +188,7 @@ function VesselAdminDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Update Vessel Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {vesselData.map((vessel, index) => (
+          {(vesselData || []).map((vessel, index) => (
             <Card key={vessel.id}>
               <CardHeader>
                 <CardTitle>{vessel.vesselName}</CardTitle>
@@ -194,11 +196,11 @@ function VesselAdminDashboard() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Input value={vessel.status} onChange={e => handleVesselChange(index, 'status', e.target.value)} />
+                  <Input value={vessel.status || ''} onChange={e => handleVesselChange(index, 'status', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Cargo</Label>
-                  <Input value={vessel.cargo} onChange={e => handleVesselChange(index, 'cargo', e.target.value)} />
+                  <Input value={vessel.cargo || ''} onChange={e => handleVesselChange(index, 'cargo', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Departure Port</Label>
@@ -240,11 +242,11 @@ function VesselAdminDashboard() {
                 </div>
                 <div className="space-y-2">
                   <Label>Departure Date</Label>
-                  <Input type="date" value={vessel.departureDate} onChange={e => handleVesselChange(index, 'departureDate', e.target.value)} />
+                  <Input type="date" value={vessel.departureDate || ''} onChange={e => handleVesselChange(index, 'departureDate', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>ETA Date</Label>
-                  <Input type="date" value={vessel.etaDate} onChange={e => handleVesselChange(index, 'etaDate', e.target.value)} />
+                  <Input type="date" value={vessel.etaDate || ''} onChange={e => handleVesselChange(index, 'etaDate', e.target.value)} />
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch id={`anchored-${vessel.id}`} checked={vessel.anchored} onCheckedChange={checked => handleVesselChange(index, 'anchored', checked)} />
@@ -315,21 +317,21 @@ export default function VesAdmPage() {
   
   if (!user.email || !VESSEL_ADMINS.includes(user.email)) {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <Card className="w-full max-w-md text-center border-red-500">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-center gap-2 text-red-600">
-                        <ShieldAlert className="h-6 w-6" />
-                        <span>Access Denied</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground">
-                        Your account <span className="font-semibold">{user.email}</span> is not authorized to access the Vessel Admin panel.
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+          <Card className="w-full max-w-md text-center border-red-500">
+              <CardHeader>
+                  <CardTitle className="flex items-center justify-center gap-2 text-red-600">
+                      <ShieldAlert className="h-6 w-6" />
+                      <span>Access Denied</span>
+                  </CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <p className="text-muted-foreground">
+                      Your account <span className="font-semibold">{user.email}</span> is not authorized to access the Vessel Admin panel.
+                  </p>
+              </CardContent>
+          </Card>
+      </div>
     );
   }
 

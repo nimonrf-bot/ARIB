@@ -5,8 +5,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { warehouses as defaultWarehouses, type Warehouse, WarehouseBin } from '@/lib/data';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { type Warehouse, type WarehouseBin } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { updateWarehouses } from '@/ai/flows/update-warehouses-flow';
 import { Loader, Plus, Minus, ShieldAlert } from 'lucide-react';
@@ -21,11 +21,11 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth, useCollection, useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs, type DocumentData } from 'firebase/firestore';
 import { WAREHOUSE_ADMINS } from '@/lib/admins';
 
 
-interface ChangeLog {
+interface ChangeLog extends DocumentData {
   id?: string;
   user: string;
   timestamp: string;
@@ -36,8 +36,8 @@ function WarehouseAdminDashboard() {
   const firestore = useFirestore();
   const { user } = useAuth();
   
-  const { data: warehouseData, setData: setWarehouseData } = useCollection<Warehouse>('warehouses');
-  const { data: logs, add: addLog } = useCollection<ChangeLog>('warehouseLogs');
+  const { data: warehouseData, setData: setWarehouseData, loading: warehousesLoading } = useCollection<Warehouse>('warehouses');
+  const { data: logs, add: addLog, loading: logsLoading } = useCollection<ChangeLog>('warehouseLogs');
 
   const sortedLogs = useMemo(() => {
     if (!logs) return [];
@@ -54,8 +54,8 @@ function WarehouseAdminDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setCurrentUser(user.email || 'Admin');
+    if (user && user.email) {
+      setCurrentUser(user.email);
     }
   }, [user]);
 
@@ -65,11 +65,12 @@ function WarehouseAdminDashboard() {
     const warehousesCollectionRef = collection(firestore, 'warehouses');
     const savedWarehousesSnapshot = await getDocs(warehousesCollectionRef);
     const oldWarehouseData: Warehouse[] = savedWarehousesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Warehouse));
+    const warehouseMap = new Map(oldWarehouseData.map(w => [w.id, w]));
 
     const changes: string[] = [];
 
     warehouseData.forEach((newWarehouse) => {
-      const oldWarehouse = oldWarehouseData.find(w => w.id === newWarehouse.id);
+      const oldWarehouse = warehouseMap.get(newWarehouse.id);
 
       if (oldWarehouse) {
         if (newWarehouse.name !== oldWarehouse.name) {
@@ -79,13 +80,15 @@ function WarehouseAdminDashboard() {
           changes.push(`Warehouse '${newWarehouse.name}': Total capacity changed from '${oldWarehouse.totalCapacity}' to '${newWarehouse.totalCapacity}'.`);
         }
         
+        const oldBinMap = new Map(oldWarehouse.bins.map(b => [b.id, b]));
         newWarehouse.bins.forEach((newBin) => {
-          const oldBin = oldWarehouse.bins.find(b => b.id === newBin.id);
+          const oldBin = oldBinMap.get(newBin.id);
           if (oldBin) {
              (Object.keys(newBin) as Array<keyof WarehouseBin>).forEach(field => {
+                if (field === 'id') return;
                 const oldValue = oldBin[field];
                 const newValue = newBin[field];
-                if (field !== 'id' && String(newValue) !== String(oldValue)) {
+                if (String(newValue) !== String(oldValue)) {
                     changes.push(`Warehouse '${newWarehouse.name}', Bin ${newBin.id}: ${field} changed from '${oldValue}' to '${newValue}'.`);
                 }
              });
@@ -100,14 +103,14 @@ function WarehouseAdminDashboard() {
         timestamp: new Date().toISOString(),
         changes: changes,
       };
-      addLog(newLog);
+      await addLog(newLog);
     }
     
     const batch = writeBatch(firestore);
     warehouseData.forEach((warehouse) => {
       const { id, ...data } = warehouse;
       const docRef = doc(firestore, 'warehouses', String(id));
-      batch.set(docRef, data);
+      batch.set(docRef, data, { merge: true });
     });
     await batch.commit();
 
@@ -226,7 +229,7 @@ function WarehouseAdminDashboard() {
   
   const selectedWarehouseForDialog = warehouseData?.find(wh => wh.id === parseInt(selectedWarehouseId, 10));
   
-  if (!warehouseData) {
+  if (warehousesLoading || logsLoading) {
     return <div className="flex justify-center items-center h-screen"><Loader className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -279,7 +282,7 @@ function WarehouseAdminDashboard() {
                             <SelectValue placeholder="Select a warehouse" />
                         </SelectTrigger>
                         <SelectContent>
-                            {warehouseData.map(wh => (
+                            {(warehouseData || []).map(wh => (
                                 <SelectItem key={wh.id} value={String(wh.id)}>{wh.name}</SelectItem>
                             ))}
                         </SelectContent>
@@ -333,7 +336,7 @@ function WarehouseAdminDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Update Warehouse Information</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           {warehouseData.map((warehouse, whIndex) => (
+           {(warehouseData || []).map((warehouse, whIndex) => (
              <Card key={warehouse.id}>
                 <CardHeader>
                   <CardTitle>Warehouse {warehouse.id}</CardTitle>
@@ -345,7 +348,7 @@ function WarehouseAdminDashboard() {
                   </div>
                   <div className="space-y-2">
                     <Label>Total Capacity (T)</Label>
-                    <Input type="number" value={warehouse.totalCapacity} onChange={e => handleWarehouseChange(whIndex, 'totalCapacity', parseInt(e.target.value, 10))} />
+                    <Input type="number" value={warehouse.totalCapacity || ''} onChange={e => handleWarehouseChange(whIndex, 'totalCapacity', parseInt(e.target.value, 10) || 0)} />
                   </div>
                   {warehouse.bins.map((bin, binIndex) => (
                     <div key={bin.id} className="p-4 border rounded-md space-y-2">
@@ -356,7 +359,7 @@ function WarehouseAdminDashboard() {
                        </div>
                        <div className="space-y-2">
                           <Label>Tonnage</Label>
-                          <Input type="number" value={bin.tonnage} onChange={e => handleWarehouseBinChange(whIndex, binIndex, 'tonnage', parseInt(e.target.value, 10))} />
+                          <Input type="number" value={bin.tonnage} onChange={e => handleWarehouseBinChange(whIndex, binIndex, 'tonnage', parseInt(e.target.value, 10) || 0)} />
                        </div>
                        <div className="space-y-2">
                           <Label>Code</Label>
@@ -403,7 +406,6 @@ function WarehouseAdminDashboard() {
   );
 }
 
-
 export default function WarehouseAdminPage() {
   const { user, loading } = useAuth();
 
@@ -430,21 +432,21 @@ export default function WarehouseAdminPage() {
   
   if (!user.email || !WAREHOUSE_ADMINS.includes(user.email)) {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <Card className="w-full max-w-md text-center border-red-500">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-center gap-2 text-red-600">
-                        <ShieldAlert className="h-6 w-6" />
-                        <span>Access Denied</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground">
-                        Your account <span className="font-semibold">{user.email}</span> is not authorized to access the Warehouse Admin panel.
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+          <Card className="w-full max-w-md text-center border-red-500">
+              <CardHeader>
+                  <CardTitle className="flex items-center justify-center gap-2 text-red-600">
+                      <ShieldAlert className="h-6 w-6" />
+                      <span>Access Denied</span>
+                  </CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <p className="text-muted-foreground">
+                      Your account <span className="font-semibold">{user.email}</span> is not authorized to access the Warehouse Admin panel.
+                  </p>
+              </CardContent>
+          </Card>
+      </div>
     );
   }
 
