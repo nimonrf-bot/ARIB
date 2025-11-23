@@ -296,7 +296,7 @@ function WarehouseAdminDashboard() {
                       <Select value={selectedBinId} onValueChange={setSelectedBinId}>
                         <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="Select a bin" />
-                        </TriggerTrigger>
+                        </Trigger>
                         <SelectContent>
                             {selectedWarehouseForDialog.bins.map(bin => (
                                 <SelectItem key={bin.id} value={bin.id}>{bin.id} ({bin.commodity})</SelectItem>
