@@ -11,11 +11,12 @@ import { Switch } from '@/components/ui/switch';
 import { vessels as defaultVessels, type Vessel } from '@/lib/data';
 import { updateVessels } from '@/ai/flows/update-vessels-flow';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader } from 'lucide-react';
+import { Loader, ShieldAlert } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth, useCollection, useFirestore } from '@/firebase';
 import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
+import { VESSEL_ADMINS } from '@/lib/admins';
 
 const portNames = [
   'Caspian port',
@@ -227,7 +228,7 @@ function VesselAdminDashboard() {
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a port" />
-                    </SelectTrigger>
+                    </TriggerTrigger>
                     <SelectContent>
                       {portNames
                         .filter(port => port !== vessel.origin)
@@ -306,10 +307,30 @@ export default function VesAdmPage() {
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Vessel Admin Login</CardTitle>
-             <CardContent>You must be logged in to view this page.</CardContent>
+             <CardContent><p>You must be logged in to view this page.</p></CardContent>
           </CardHeader>
         </Card>
       </div>
+    );
+  }
+  
+  if (!user.email || !VESSEL_ADMINS.includes(user.email)) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            <Card className="w-full max-w-md text-center border-red-500">
+                <CardHeader>
+                    <CardTitle className="flex items-center justify-center gap-2 text-red-600">
+                        <ShieldAlert className="h-6 w-6" />
+                        <span>Access Denied</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">
+                        Your account <span className="font-semibold">{user.email}</span> is not authorized to access the Vessel Admin panel.
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
     );
   }
 
@@ -322,5 +343,3 @@ export default function VesAdmPage() {
     </main>
   );
 }
-
-    

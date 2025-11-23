@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { warehouses as defaultWarehouses, type Warehouse, WarehouseBin } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { updateWarehouses } from '@/ai/flows/update-warehouses-flow';
-import { Loader, Plus, Minus } from 'lucide-react';
+import { Loader, Plus, Minus, ShieldAlert } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Dialog,
@@ -22,6 +22,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth, useCollection, useFirestore } from '@/firebase';
 import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
+import { WAREHOUSE_ADMINS } from '@/lib/admins';
+
 
 interface ChangeLog {
   id?: string;
@@ -294,7 +296,7 @@ function WarehouseAdminDashboard() {
                       <Select value={selectedBinId} onValueChange={setSelectedBinId}>
                         <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="Select a bin" />
-                        </SelectTrigger>
+                        </TriggerTrigger>
                         <SelectContent>
                             {selectedWarehouseForDialog.bins.map(bin => (
                                 <SelectItem key={bin.id} value={bin.id}>{bin.id} ({bin.commodity})</SelectItem>
@@ -422,10 +424,30 @@ export default function WarehouseAdminPage() {
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Warehouse Admin Login</CardTitle>
-            <CardContent>You must be logged in to view this page.</CardContent>
+            <CardContent><p>You must be logged in to view this page.</p></CardContent>
           </CardHeader>
         </Card>
       </div>
+    );
+  }
+  
+  if (!user.email || !WAREHOUSE_ADMINS.includes(user.email)) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            <Card className="w-full max-w-md text-center border-red-500">
+                <CardHeader>
+                    <CardTitle className="flex items-center justify-center gap-2 text-red-600">
+                        <ShieldAlert className="h-6 w-6" />
+                        <span>Access Denied</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">
+                        Your account <span className="font-semibold">{user.email}</span> is not authorized to access the Warehouse Admin panel.
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
     );
   }
 
@@ -438,5 +460,3 @@ export default function WarehouseAdminPage() {
     </main>
   );
 }
-
-    
