@@ -180,9 +180,10 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 };
 
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
-  const currentStock = warehouse.bins.reduce((acc, bin) => acc + bin.tonnage, 0);
-  const fillPercentage = (currentStock / warehouse.totalCapacity) * 100;
-  const remainingCapacity = warehouse.totalCapacity - currentStock;
+  const safeTotalCapacity = typeof warehouse.totalCapacity === 'number' ? warehouse.totalCapacity : 0;
+  const currentStock = warehouse.bins.reduce((acc, bin) => acc + (typeof bin.tonnage === 'number' ? bin.tonnage : 0), 0);
+  const fillPercentage = safeTotalCapacity > 0 ? (currentStock / safeTotalCapacity) * 100 : 0;
+  const remainingCapacity = safeTotalCapacity - currentStock;
   
   const getCapacityColor = () => {
     if (fillPercentage > 80) return 'red';
@@ -206,7 +207,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
               )}>
                 <p className="font-bold text-lg">{bin.id}</p>
                 <p>{bin.commodity}</p>
-                <p className="font-semibold">{bin.tonnage.toLocaleString()}T</p>
+                <p className="font-semibold">{(typeof bin.tonnage === 'number' ? bin.tonnage : 0).toLocaleString()}T</p>
                 <p className="text-sm text-gray-500">{bin.code}</p>
               </div>
             ))}
@@ -228,7 +229,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
         </div>
         <div className="text-center mt-4 space-y-1">
           <p className="font-bold text-lg">
-            Total Capacity: {warehouse.totalCapacity.toLocaleString()}T
+            Total Capacity: {safeTotalCapacity.toLocaleString()}T
           </p>
           <p className={cn(
             "font-semibold", 
@@ -277,6 +278,8 @@ export default function Home() {
       const warehouseMap = new Map<number, Warehouse>();
       flatWarehouseData.forEach(row => {
         const warehouseId = row.warehouseId;
+        if (!warehouseId) return; // Skip empty rows
+
         if (!warehouseMap.has(warehouseId)) {
           warehouseMap.set(warehouseId, {
             id: warehouseId,
