@@ -15,10 +15,10 @@ import { DATA_URLS } from "@/lib/config";
 interface Vessel {
   id?: number;
   cargo?: string;
-  vesselName?: string;
-  vesselId?: string;
-  departureDate?: any;
-  etaDate?: any;
+  vesselname?: string;
+  vesselid?: string;
+  departuredate?: any;
+  etadate?: any;
   anchored?: boolean;
   origin?: string;
   destination?: string;
@@ -109,12 +109,12 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
       
       const now = new Date();
       // Handle potential date format issues from Excel
-      const departureDate = typeof vessel.departureDate === 'number'
-        ? new Date(Math.round((vessel.departureDate - 25569) * 86400 * 1000))
-        : new Date(vessel.departureDate);
-      const etaDate = typeof vessel.etaDate === 'number'
-        ? new Date(Math.round((vessel.etaDate - 25569) * 86400 * 1000))
-        : new Date(vessel.etaDate);
+      const departureDate = typeof vessel.departuredate === 'number'
+        ? new Date(Math.round((vessel.departuredate - 25569) * 86400 * 1000))
+        : new Date(vessel.departuredate);
+      const etaDate = typeof vessel.etadate === 'number'
+        ? new Date(Math.round((vessel.etadate - 25569) * 86400 * 1000))
+        : new Date(vessel.etadate);
       
       if (isNaN(departureDate.getTime()) || isNaN(etaDate.getTime()) || etaDate <= departureDate) {
         setProgress(0);
@@ -146,9 +146,9 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
   if (!vessel) return null;
 
   const displayProgress = vessel.anchored ? vessel.progress : progress;
-  const etaDateObj = typeof vessel.etaDate === 'number'
-    ? new Date(Math.round((vessel.etaDate - 25569) * 86400 * 1000))
-    : new Date(vessel.etaDate);
+  const etaDateObj = typeof vessel.etadate === 'number'
+    ? new Date(Math.round((vessel.etadate - 25569) * 86400 * 1000))
+    : new Date(vessel.etadate);
   const etaDateStr = isNaN(etaDateObj.getTime()) ? "Invalid Date" : etaDateObj.toLocaleDateString();
 
 
@@ -164,7 +164,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
         <div className="flex justify-between items-start mb-3">
           <div>
             <h2 className="text-xl font-bold text-gray-800">
-              {vessel.vesselName} ({vessel.vesselId})
+              {vessel.vesselname} ({vessel.vesselid})
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               <span className="font-semibold">Cargo:</span> {vessel.cargo}
@@ -279,22 +279,6 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 // Helper to normalize keys from Excel
 const normalizeKey = (key: string) => key.toLowerCase().replace(/\s+/g, '');
 
-const mapRowToSchema = (row: any, schemaMap: {[key: string]: string}) => {
-    const newRow: { [key: string]: any } = {};
-    for (const key in row) {
-        if (Object.prototype.hasOwnProperty.call(row, key)) {
-            const normalized = normalizeKey(key);
-            if (schemaMap[normalized]) {
-              newRow[schemaMap[normalized]] = row[key];
-            } else {
-              newRow[normalized] = row[key];
-            }
-        }
-    }
-    return newRow;
-};
-
-
 async function fetchVesselData(): Promise<Vessel[]> {
   console.log(`[Vessel] Step 1: Fetching data from ${DATA_URLS.vessels}`);
   const res = await fetch(DATA_URLS.vessels, { cache: 'no-store' });
@@ -373,7 +357,7 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
 
   const warehouseMap = new Map<number, Warehouse>();
   normalizedData.forEach(row => {
-    const warehouseId = row.warehouseid; // CORRECTED
+    const warehouseId = row.warehouseid;
     if (!warehouseId) {
         console.warn("[Warehouse] Skipping row due to missing 'warehouseid':", row);
         return; 
@@ -389,10 +373,10 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
     }
     
     const binData = {
-      id: row.binid, // CORRECTED
-      commodity: row.bincommodity, // CORRECTED
-      tonnage: row.bintonnage, // CORRECTED
-      code: row.bincode, // CORRECTED
+      id: row.binid,
+      commodity: row.bincommodity,
+      tonnage: row.bintonnage,
+      code: row.bincode,
     };
     
     // Only add bin if it has an ID
