@@ -229,7 +229,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
         </div>
         <div className="text-center mt-4 space-y-1">
           <p className="font-bold text-lg">
-            Total Capacity: {safeTotalCapacity.toLocaleString()}T
+            Total Capacity: {(safeTotalCapacity || 0).toLocaleString()}T
           </p>
           <p className={cn(
             "font-semibold", 
@@ -237,7 +237,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
             { 'text-yellow-600': capacityColor === 'yellow' },
             { 'text-red-600': capacityColor === 'red' }
           )}>
-            Available: {remainingCapacity.toLocaleString()}T
+            Available: {(remainingCapacity || 0).toLocaleString()}T
           </p>
         </div>
       </CardContent>
@@ -287,8 +287,11 @@ export default function Home() {
       }
       const warehouseArrayBuffer = await warehouseRes.arrayBuffer();
       const warehouseWorkbook = XLSX.read(warehouseArrayBuffer, { type: 'buffer' });
-      const warehouseSheetName = warehouseWorkbook.SheetNames[0];
+      const warehouseSheetName = "Warehouses";
       const warehouseWorksheet = warehouseWorkbook.Sheets[warehouseSheetName];
+      if (!warehouseWorksheet) {
+        throw new Error(`Sheet "${warehouseSheetName}" not found in the Excel file.`);
+      }
       const flatWarehouseData: any[] = XLSX.utils.sheet_to_json(warehouseWorksheet);
 
       const warehouseMap = new Map<number, Warehouse>();
@@ -300,15 +303,15 @@ export default function Home() {
           warehouseMap.set(warehouseId, {
             id: warehouseId,
             name: row.warehouseName,
-            totalCapacity: row.warehouseTotalCapacity,
+            totalCapacity: row.totalCapacity,
             bins: [],
           });
         }
         warehouseMap.get(warehouseId)?.bins.push({
           id: row.binld,
-          commodity: row.binCommodity,
-          tonnage: row.binTonnage,
-          code: row.binCode,
+          commodity: row.commodity,
+          tonnage: row.tonnage,
+          code: row.code,
         });
       });
       const warehouseData = Array.from(warehouseMap.values());
