@@ -1,7 +1,6 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { type Warehouse as DataWarehouse } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { Anchor, ArrowRight } from "lucide-react";
@@ -31,7 +30,7 @@ interface WarehouseBin {
   commodity: string;
   tonnage: number;
   code: string;
-  bintonnage?: number; // Add this to handle normalized data
+  bintonnage?: number;
 }
 
 interface Warehouse {
@@ -39,7 +38,7 @@ interface Warehouse {
   name: string;
   totalCapacity: number;
   bins: WarehouseBin[];
-  totalcapacity?: number; // Add this to handle normalized data
+  totalcapacity?: number; 
 }
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -213,11 +212,10 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 };
 
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
-  // Use lowercase properties to match normalized data
   const safeTotalCapacity = typeof warehouse.totalcapacity === 'number' && !isNaN(warehouse.totalcapacity) ? warehouse.totalcapacity : 0;
   
   const currentStock = warehouse.bins?.reduce((acc, bin) => {
-    // Use 'bintonnage' from the normalized data
+    // Correctly access the lowercase 'bintonnage' property
     const tonnage = typeof bin.bintonnage === 'number' && !isNaN(bin.bintonnage) ? bin.bintonnage : 0;
     return acc + tonnage;
   }, 0) || 0;
@@ -247,7 +245,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
               )}>
                 <p className="font-bold text-lg">{bin.id}</p>
                 <p>{bin.commodity}</p>
-                {/* Use 'bintonnage' from the normalized data */}
+                {/* Correctly access the lowercase 'bintonnage' property */}
                 <p className="font-semibold">{(typeof bin.bintonnage === 'number' ? bin.bintonnage : 0).toLocaleString()}T</p>
                 <p className="text-sm text-gray-500">{bin.code}</p>
               </div>
@@ -367,7 +365,7 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
 
   const warehouseMap = new Map<number, Warehouse>();
   normalizedData.forEach(row => {
-    const warehouseId = row.warehouseid;
+    const warehouseId = parseFloat(row.warehouseid);
     if (!warehouseId) {
         console.warn("[Warehouse] Skipping row due to missing 'warehouseid':", row);
         return; 
@@ -377,8 +375,8 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
       warehouseMap.set(warehouseId, {
         id: warehouseId,
         name: row.warehousename,
-        totalCapacity: 0, // Will be set by totalcapacity
-        totalcapacity: parseFloat(row.warehousetotalcapacity) || 0,
+        totalCapacity: 0, 
+        totalcapacity: parseFloat(row.totalcapacity) || 0,
         bins: [],
       });
     }
@@ -386,12 +384,11 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
     const binData = {
       id: row.binid,
       commodity: row.bincommodity,
-      tonnage: 0, // Will be set by bintonnage
-      bintonnage: parseFloat(row.bintonnage) || 0,
+      tonnage: 0, 
+      bintonnage: parseFloat(row.tonnage) || 0,
       code: row.bincode,
     };
     
-    // Only add bin if it has an ID
     if (binData.id) {
         warehouseMap.get(warehouseId)?.bins.push(binData);
     }
