@@ -31,6 +31,7 @@ interface WarehouseBin {
   commodity: string;
   tonnage: number;
   code: string;
+  bintonnage?: number; // Add this to handle normalized data
 }
 
 interface Warehouse {
@@ -38,6 +39,7 @@ interface Warehouse {
   name: string;
   totalCapacity: number;
   bins: WarehouseBin[];
+  totalcapacity?: number; // Add this to handle normalized data
 }
 
 const ShipIcon = ({ className }: { className?: string }) => (
@@ -211,8 +213,15 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 };
 
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
-  const safeTotalCapacity = typeof warehouse.totalCapacity === 'number' && !isNaN(warehouse.totalCapacity) ? warehouse.totalCapacity : 0;
-  const currentStock = warehouse.bins?.reduce((acc, bin) => acc + (typeof bin.tonnage === 'number' && !isNaN(bin.tonnage) ? bin.tonnage : 0), 0) || 0;
+  // Use lowercase properties to match normalized data
+  const safeTotalCapacity = typeof warehouse.totalcapacity === 'number' && !isNaN(warehouse.totalcapacity) ? warehouse.totalcapacity : 0;
+  
+  const currentStock = warehouse.bins?.reduce((acc, bin) => {
+    // Use 'bintonnage' from the normalized data
+    const tonnage = typeof bin.bintonnage === 'number' && !isNaN(bin.bintonnage) ? bin.bintonnage : 0;
+    return acc + tonnage;
+  }, 0) || 0;
+
   const fillPercentage = safeTotalCapacity > 0 ? (currentStock / safeTotalCapacity) * 100 : 0;
   const remainingCapacity = safeTotalCapacity - currentStock;
   
@@ -238,7 +247,8 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
               )}>
                 <p className="font-bold text-lg">{bin.id}</p>
                 <p>{bin.commodity}</p>
-                <p className="font-semibold">{(typeof bin.tonnage === 'number' ? bin.tonnage : 0).toLocaleString()}T</p>
+                {/* Use 'bintonnage' from the normalized data */}
+                <p className="font-semibold">{(typeof bin.bintonnage === 'number' ? bin.bintonnage : 0).toLocaleString()}T</p>
                 <p className="text-sm text-gray-500">{bin.code}</p>
               </div>
             ))}
@@ -367,7 +377,8 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
       warehouseMap.set(warehouseId, {
         id: warehouseId,
         name: row.warehousename,
-        totalCapacity: parseFloat(row.warehousetotalcapacity) || 0,
+        totalCapacity: 0, // Will be set by totalcapacity
+        totalcapacity: parseFloat(row.warehousetotalcapacity) || 0,
         bins: [],
       });
     }
@@ -375,7 +386,8 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
     const binData = {
       id: row.binid,
       commodity: row.bincommodity,
-      tonnage: parseFloat(row.bintonnage) || 0,
+      tonnage: 0, // Will be set by bintonnage
+      bintonnage: parseFloat(row.bintonnage) || 0,
       code: row.bincode,
     };
     
