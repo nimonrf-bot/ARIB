@@ -180,8 +180,8 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 };
 
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
-  const safeTotalCapacity = typeof warehouse.totalCapacity === 'number' ? warehouse.totalCapacity : 0;
-  const currentStock = warehouse.bins.reduce((acc, bin) => acc + (typeof bin.tonnage === 'number' ? bin.tonnage : 0), 0);
+  const safeTotalCapacity = typeof warehouse.totalCapacity === 'number' && !isNaN(warehouse.totalCapacity) ? warehouse.totalCapacity : 0;
+  const currentStock = warehouse.bins.reduce((acc, bin) => acc + (typeof bin.tonnage === 'number' && !isNaN(bin.tonnage) ? bin.tonnage : 0), 0);
   const fillPercentage = safeTotalCapacity > 0 ? (currentStock / safeTotalCapacity) * 100 : 0;
   const remainingCapacity = safeTotalCapacity - currentStock;
   
@@ -229,7 +229,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
         </div>
         <div className="text-center mt-4 space-y-1">
           <p className="font-bold text-lg">
-            Total Capacity: {(safeTotalCapacity || 0).toLocaleString()}T
+            Total Capacity: {safeTotalCapacity.toLocaleString()}T
           </p>
           <p className={cn(
             "font-semibold", 
@@ -237,7 +237,7 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
             { 'text-yellow-600': capacityColor === 'yellow' },
             { 'text-red-600': capacityColor === 'red' }
           )}>
-            Available: {(remainingCapacity || 0).toLocaleString()}T
+            Available: {remainingCapacity.toLocaleString()}T
           </p>
         </div>
       </CardContent>
@@ -258,6 +258,83 @@ const mapRowToSchema = (row: any) => {
     return newRow;
 };
 
+
+async function fetchVesselData(): Promise<Vessel[]> {
+  console.log(`Fetching vessel data from: ${DATA_URLS.vessels}`);
+  const res = await fetch(DATA_URLS.vessels);
+  if (!res.ok) {
+    throw new Error(`HTTP error ${res.status} while fetching vessel data.`);
+  }
+  const arrayBuffer = await res.arrayBuffer();
+  const workbook = XLSX.read(arrayBuffer, { type: 'buffer' });
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  if (!worksheet) {
+      throw new Error(`Sheet "${sheetName}" not found in the vessel Excel file.`);
+  }
+  const jsonData: Vessel[] = XLSX.utils.sheet_to_json(worksheet);
+  console.log("Successfully parsed vessel data:", jsonData);
+  return jsonData;
+}
+
+async function fetchWarehouseData(): Promise<Warehouse[]> {
+  console.log(`[Warehouse] Step 1: Fetching data from ${DATA_URLS.warehouses}`);
+  const res = await fetch(DATA_URLS.warehouses);
+  if (!res.ok) {
+    throw new Error(`[Warehouse] Step 1 FAILED: HTTP error ${res.status}.`);
+  }
+  const arrayBuffer = await res.arrayBuffer();
+  console.log("[Warehouse] Step 2: File downloaded successfully. Reading file content.");
+  const workbook = XLSX.read(arrayBuffer, { type: 'buffer' });
+  
+  const sheetName = "Warehouses";
+  const worksheet = workbook.Sheets[sheetName];
+  if (!worksheet) {
+    console.error(`[Warehouse] Step 3 FAILED: Sheet "${sheetName}" not found. Available sheets:`, workbook.SheetNames);
+    throw new Error(`Sheet "${sheetName}" not found in the Excel file.`);
+  }
+  console.log(`[Warehouse] Step 3: Found sheet "${sheetName}". Converting to JSON.`);
+
+  const flatData: any[] = XLSX.utils.sheet_to_json(worksheet);
+  console.log("[Warehouse] Step 4: Raw JSON data from sheet:", flatData);
+  if (flatData.length === 0) {
+      console.warn("[Warehouse] Warning: The 'Warehouses' sheet is empty.");
+      return [];
+  }
+
+  const normalizedData = flatData.map(mapRowToSchema);
+  console.log("[Warehouse] Step 5: Normalized data (lowercase headers):", normalizedData);
+
+  const warehouseMap = new Map<number, Warehouse>();
+  normalizedData.forEach(row => {
+    const warehouseId = row.warehouseld;
+    if (!warehouseId) {
+        console.warn("[Warehouse] Skipping row due to missing 'warehouseld':", row);
+        return; 
+    }
+
+    if (!warehouseMap.has(warehouseId)) {
+      warehouseMap.set(warehouseId, {
+        id: warehouseId,
+        name: row.warehousename,
+        totalCapacity: row.warehousetotalcapacity,
+        bins: [],
+      });
+    }
+    warehouseMap.get(warehouseId)?.bins.push({
+      id: row.binld,
+      commodity: row.bincommodity,
+      tonnage: row.bintonnage,
+      code: row.bincode,
+    });
+  });
+
+  const finalData = Array.from(warehouseMap.values());
+  console.log("[Warehouse] Step 6: Final structured data:", finalData);
+  return finalData;
+}
+
+
 export default function Home() {
   const [vessels, setVessels] = useState<Vessel[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -270,78 +347,29 @@ export default function Home() {
     setError(null);
     let vesselDataLoaded = false;
     let warehouseDataLoaded = false;
-
-    // Fetch and parse vessel data
+    
     try {
-      console.log(`Fetching vessel data from: ${DATA_URLS.vessels}`);
-      const vesselRes = await fetch(DATA_URLS.vessels);
-      if (!vesselRes.ok) {
-        throw new Error(`HTTP error ${vesselRes.status}`);
-      }
-      const vesselArrayBuffer = await vesselRes.arrayBuffer();
-      const vesselWorkbook = XLSX.read(vesselArrayBuffer, { type: 'buffer' });
-      const vesselSheetName = vesselWorkbook.SheetNames[0];
-      const vesselWorksheet = vesselWorkbook.Sheets[vesselSheetName];
-      const vesselData: Vessel[] = XLSX.utils.sheet_to_json(vesselWorksheet);
+      const vesselData = await fetchVesselData();
       setVessels(vesselData);
       vesselDataLoaded = true;
-      console.log("Successfully parsed vessel data:", vesselData);
     } catch (e: any) {
-      console.error(`Failed to fetch or parse vessel data from ${DATA_URLS.vessels}:`, e);
+      console.error("Vessel data loading error:", e);
       setError(prev => prev ? `${prev}, and failed to load vessel data.` : 'Failed to load vessel data.');
     }
 
-    // Fetch and parse warehouse data
     try {
-      console.log(`Fetching warehouse data from: ${DATA_URLS.warehouses}`);
-      const warehouseRes = await fetch(DATA_URLS.warehouses);
-       if (!warehouseRes.ok) {
-        throw new Error(`HTTP error ${warehouseRes.status}`);
-      }
-      const warehouseArrayBuffer = await warehouseRes.arrayBuffer();
-      const warehouseWorkbook = XLSX.read(warehouseArrayBuffer, { type: 'buffer' });
-      const warehouseSheetName = "Warehouses";
-      const warehouseWorksheet = warehouseWorkbook.Sheets[warehouseSheetName];
-      if (!warehouseWorksheet) {
-        throw new Error(`Sheet "${warehouseSheetName}" not found in the Excel file.`);
-      }
-      const flatWarehouseData: any[] = XLSX.utils.sheet_to_json(warehouseWorksheet);
-      
-      const normalizedData = flatWarehouseData.map(mapRowToSchema);
-
-      const warehouseMap = new Map<number, Warehouse>();
-      normalizedData.forEach(row => {
-        const warehouseId = row.warehouseld;
-        if (!warehouseId) return; 
-
-        if (!warehouseMap.has(warehouseId)) {
-          warehouseMap.set(warehouseId, {
-            id: warehouseId,
-            name: row.warehousename,
-            totalCapacity: row.warehousetotalcapacity,
-            bins: [],
-          });
-        }
-        warehouseMap.get(warehouseId)?.bins.push({
-          id: row.binld,
-          commodity: row.bincommodity,
-          tonnage: row.bintonnage,
-          code: row.bincode,
-        });
-      });
-      const warehouseData = Array.from(warehouseMap.values());
+      const warehouseData = await fetchWarehouseData();
       setWarehouses(warehouseData);
       warehouseDataLoaded = true;
-      console.log("Successfully parsed warehouse data:", warehouseData);
     } catch (e: any) {
-      console.error(`Failed to fetch or parse warehouse data from ${DATA_URLS.warehouses}:`, e);
+      console.error("Warehouse data loading error:", e);
       setError(prev => prev ? `${prev}, and failed to load warehouse data.` : 'Failed to load warehouse data.');
-    } finally {
-      if (vesselDataLoaded || warehouseDataLoaded) {
-        setLastUpdated(new Date());
-      }
-      setLoading(false);
     }
+
+    if (vesselDataLoaded || warehouseDataLoaded) {
+      setLastUpdated(new Date());
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -380,7 +408,7 @@ export default function Home() {
         ) : error && !vessels.length ? (
           <div className="text-center py-10 text-red-600 bg-red-50 p-4 rounded-lg">
             <p className="font-bold">Error Loading Vessels</p>
-            <p>Could not load vessel data. Please check the file at the configured URL and ensure it is accessible.</p>
+            <p>{error}</p>
           </div>
         ) : vessels && vessels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -389,7 +417,7 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-10 text-gray-500">
+          !error && <div className="text-center py-10 text-gray-500">
             <p>No vessel data found. The source file might be empty or unavailable.</p>
           </div>
         )}
@@ -406,7 +434,7 @@ export default function Home() {
         ) : error && !warehouses.length ? (
            <div className="text-center py-10 text-red-600 bg-red-50 p-4 rounded-lg">
             <p className="font-bold">Error Loading Warehouses</p>
-            <p>Could not load warehouse data. Please check the file at the configured URL and ensure it is accessible.</p>
+            <p>{error}</p>
           </div>
         ) : warehouses && warehouses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
@@ -415,7 +443,7 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-10 text-gray-500">
+          !error && <div className="text-center py-10 text-gray-500">
             <p>No warehouse data found. The source file might be empty or unavailable.</p>
           </div>
         )}
