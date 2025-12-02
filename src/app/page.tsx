@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { type Vessel, type Warehouse } from "@/lib/data";
+import { type Warehouse as DataWarehouse } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { Anchor, ArrowRight } from "lucide-react";
@@ -10,6 +10,35 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { DATA_URLS } from "@/lib/config";
+
+// Redefine types locally for the page to avoid dependency issues if lib/data is removed
+interface Vessel {
+  id?: number;
+  cargo?: string;
+  vesselName?: string;
+  vesselId?: string;
+  departureDate?: any;
+  etaDate?: any;
+  anchored?: boolean;
+  origin?: string;
+  destination?: string;
+  progress?: number;
+  status?: string;
+}
+
+interface WarehouseBin {
+  id: string;
+  commodity: string;
+  tonnage: number;
+  code: string;
+}
+
+interface Warehouse {
+  id: number;
+  name: string;
+  totalCapacity: number;
+  bins: WarehouseBin[];
+}
 
 const ShipIcon = ({ className }: { className?: string }) => (
   <svg
@@ -73,8 +102,8 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 
   useEffect(() => {
     const calculateProgress = () => {
-      if (vessel.anchored) {
-        setProgress(vessel.progress);
+      if (!vessel || vessel.anchored) {
+        setProgress(vessel?.progress || 0);
         return;
       }
       
@@ -114,6 +143,8 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
     return () => clearInterval(interval);
   }, [vessel]);
 
+  if (!vessel) return null;
+
   const displayProgress = vessel.anchored ? vessel.progress : progress;
   const etaDateObj = typeof vessel.etaDate === 'number'
     ? new Date(Math.round((vessel.etaDate - 25569) * 86400 * 1000))
@@ -122,9 +153,9 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 
 
   // Clamp the progress for positioning to avoid icon going off-screen
-  const positionProgress = Math.max(10, Math.min(90, displayProgress));
+  const positionProgress = Math.max(10, Math.min(90, displayProgress || 0));
   
-  const formatPortName = (name: string) => name ? name.toLowerCase().replace(' port', '') : '';
+  const formatPortName = (name?: string) => name ? name.toLowerCase().replace(' port', '') : '';
 
 
   return (
@@ -181,7 +212,7 @@ const VesselJourneyCard = ({ vessel }: { vessel: Vessel }) => {
 
 const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
   const safeTotalCapacity = typeof warehouse.totalCapacity === 'number' && !isNaN(warehouse.totalCapacity) ? warehouse.totalCapacity : 0;
-  const currentStock = warehouse.bins.reduce((acc, bin) => acc + (typeof bin.tonnage === 'number' && !isNaN(bin.tonnage) ? bin.tonnage : 0), 0);
+  const currentStock = warehouse.bins?.reduce((acc, bin) => acc + (typeof bin.tonnage === 'number' && !isNaN(bin.tonnage) ? bin.tonnage : 0), 0) || 0;
   const fillPercentage = safeTotalCapacity > 0 ? (currentStock / safeTotalCapacity) * 100 : 0;
   const remainingCapacity = safeTotalCapacity - currentStock;
   
@@ -199,8 +230,8 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
         <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">{warehouse.name}</h2>
         <div className="flex items-stretch gap-4">
           <div className="flex-grow grid grid-cols-2 grid-rows-2 border border-gray-300">
-            {warehouse.bins.map((bin, index) => (
-              <div key={bin.id} className={cn(`p-3 text-center border-gray-300`,
+            {(warehouse.bins || []).map((bin, index) => (
+              <div key={bin.id || index} className={cn(`p-3 text-center border-gray-300`,
                 index === 0 && 'border-r border-b',
                 index === 1 && 'border-b',
                 index === 2 && 'border-r'
@@ -248,11 +279,16 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
 // Helper to normalize keys from Excel
 const normalizeKey = (key: string) => key.toLowerCase().replace(/\s+/g, '');
 
-const mapRowToSchema = (row: any) => {
+const mapRowToSchema = (row: any, schemaMap: {[key: string]: string}) => {
     const newRow: { [key: string]: any } = {};
     for (const key in row) {
         if (Object.prototype.hasOwnProperty.call(row, key)) {
-            newRow[normalizeKey(key)] = row[key];
+            const normalized = normalizeKey(key);
+            if (schemaMap[normalized]) {
+              newRow[schemaMap[normalized]] = row[key];
+            } else {
+              newRow[normalized] = row[key];
+            }
         }
     }
     return newRow;
@@ -260,31 +296,53 @@ const mapRowToSchema = (row: any) => {
 
 
 async function fetchVesselData(): Promise<Vessel[]> {
-  console.log(`Fetching vessel data from: ${DATA_URLS.vessels}`);
-  const res = await fetch(DATA_URLS.vessels);
+  console.log(`[Vessel] Step 1: Fetching data from ${DATA_URLS.vessels}`);
+  const res = await fetch(DATA_URLS.vessels, { cache: 'no-store' });
   if (!res.ok) {
+    console.error(`[Vessel] Step 1 FAILED: HTTP error ${res.status}.`);
     throw new Error(`HTTP error ${res.status} while fetching vessel data.`);
   }
   const arrayBuffer = await res.arrayBuffer();
+  console.log("[Vessel] Step 2: File downloaded. Reading file content.");
   const workbook = XLSX.read(arrayBuffer, { type: 'buffer' });
+  
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
   if (!worksheet) {
+      console.error(`[Vessel] Step 3 FAILED: Sheet "${sheetName}" not found. Available sheets:`, workbook.SheetNames);
       throw new Error(`Sheet "${sheetName}" not found in the vessel Excel file.`);
   }
-  const jsonData: Vessel[] = XLSX.utils.sheet_to_json(worksheet);
-  console.log("Successfully parsed vessel data:", jsonData);
-  return jsonData;
+  console.log(`[Vessel] Step 3: Found sheet "${sheetName}". Converting to JSON.`);
+  
+  const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
+  console.log("[Vessel] Step 4: Raw JSON data from sheet:", jsonData);
+  if (jsonData.length === 0) {
+      console.warn("[Vessel] Warning: The sheet is empty.");
+      return [];
+  }
+
+  const normalizedData = jsonData.map(row => {
+    const newRow: { [key: string]: any } = {};
+    for (const key in row) {
+        if (Object.prototype.hasOwnProperty.call(row, key)) {
+            newRow[normalizeKey(key)] = row[key];
+        }
+    }
+    return newRow;
+  });
+  console.log("[Vessel] Step 5: Final structured data:", normalizedData);
+  return normalizedData as Vessel[];
 }
 
 async function fetchWarehouseData(): Promise<Warehouse[]> {
   console.log(`[Warehouse] Step 1: Fetching data from ${DATA_URLS.warehouses}`);
-  const res = await fetch(DATA_URLS.warehouses);
+  const res = await fetch(DATA_URLS.warehouses, { cache: 'no-store' });
   if (!res.ok) {
-    throw new Error(`[Warehouse] Step 1 FAILED: HTTP error ${res.status}.`);
+    console.error(`[Warehouse] Step 1 FAILED: HTTP error ${res.status}.`);
+    throw new Error(`HTTP error ${res.status} while fetching warehouse data.`);
   }
   const arrayBuffer = await res.arrayBuffer();
-  console.log("[Warehouse] Step 2: File downloaded successfully. Reading file content.");
+  console.log("[Warehouse] Step 2: File downloaded. Reading file content.");
   const workbook = XLSX.read(arrayBuffer, { type: 'buffer' });
   
   const sheetName = "Warehouses";
@@ -302,14 +360,22 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
       return [];
   }
 
-  const normalizedData = flatData.map(mapRowToSchema);
+  const normalizedData = flatData.map(row => {
+    const newRow: { [key: string]: any } = {};
+    for (const key in row) {
+        if (Object.prototype.hasOwnProperty.call(row, key)) {
+            newRow[normalizeKey(key)] = row[key];
+        }
+    }
+    return newRow;
+  });
   console.log("[Warehouse] Step 5: Normalized data (lowercase headers):", normalizedData);
 
   const warehouseMap = new Map<number, Warehouse>();
   normalizedData.forEach(row => {
-    const warehouseId = row.warehouseld;
+    const warehouseId = row.warehouseid; // CORRECTED
     if (!warehouseId) {
-        console.warn("[Warehouse] Skipping row due to missing 'warehouseld':", row);
+        console.warn("[Warehouse] Skipping row due to missing 'warehouseid':", row);
         return; 
     }
 
@@ -321,12 +387,18 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
         bins: [],
       });
     }
-    warehouseMap.get(warehouseId)?.bins.push({
-      id: row.binld,
-      commodity: row.bincommodity,
-      tonnage: row.bintonnage,
-      code: row.bincode,
-    });
+    
+    const binData = {
+      id: row.binid, // CORRECTED
+      commodity: row.bincommodity, // CORRECTED
+      tonnage: row.bintonnage, // CORRECTED
+      code: row.bincode, // CORRECTED
+    };
+    
+    // Only add bin if it has an ID
+    if (binData.id) {
+        warehouseMap.get(warehouseId)?.bins.push(binData);
+    }
   });
 
   const finalData = Array.from(warehouseMap.values());
@@ -345,13 +417,12 @@ export default function Home() {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
-    let vesselDataLoaded = false;
-    let warehouseDataLoaded = false;
+    let anyDataLoaded = false;
     
     try {
       const vesselData = await fetchVesselData();
       setVessels(vesselData);
-      vesselDataLoaded = true;
+      anyDataLoaded = true;
     } catch (e: any) {
       console.error("Vessel data loading error:", e);
       setError(prev => prev ? `${prev}, and failed to load vessel data.` : 'Failed to load vessel data.');
@@ -360,13 +431,13 @@ export default function Home() {
     try {
       const warehouseData = await fetchWarehouseData();
       setWarehouses(warehouseData);
-      warehouseDataLoaded = true;
+      anyDataLoaded = true;
     } catch (e: any) {
       console.error("Warehouse data loading error:", e);
       setError(prev => prev ? `${prev}, and failed to load warehouse data.` : 'Failed to load warehouse data.');
     }
 
-    if (vesselDataLoaded || warehouseDataLoaded) {
+    if (anyDataLoaded) {
       setLastUpdated(new Date());
     }
     setLoading(false);
@@ -394,21 +465,21 @@ export default function Home() {
                   Last Updated: {lastUpdated.toLocaleString()}
                 </div>
               )}
-              <Button onClick={handleRefresh}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
+              <Button onClick={handleRefresh} disabled={loading}>
+                  <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
                   Refresh
               </Button>
             </div>
         </div>
         
-        {loading ? (
+        {loading && vessels.length === 0 ? (
            <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
         ) : error && !vessels.length ? (
           <div className="text-center py-10 text-red-600 bg-red-50 p-4 rounded-lg">
             <p className="font-bold">Error Loading Vessels</p>
-            <p>{error}</p>
+            <p>{error.includes("vessel") ? error : "An unspecified error occurred."}</p>
           </div>
         ) : vessels && vessels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -417,7 +488,7 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          !error && <div className="text-center py-10 text-gray-500">
+          !error && !loading && <div className="text-center py-10 text-gray-500">
             <p>No vessel data found. The source file might be empty or unavailable.</p>
           </div>
         )}
@@ -427,14 +498,14 @@ export default function Home() {
           ARIB Warehouses
         </h1>
         
-        {loading ? (
+        {loading && warehouses.length === 0 ? (
           <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
         ) : error && !warehouses.length ? (
            <div className="text-center py-10 text-red-600 bg-red-50 p-4 rounded-lg">
             <p className="font-bold">Error Loading Warehouses</p>
-            <p>{error}</p>
+            <p>{error.includes("warehouse") ? error : "An unspecified error occurred."}</p>
           </div>
         ) : warehouses && warehouses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
@@ -443,7 +514,7 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          !error && <div className="text-center py-10 text-gray-500">
+          !error && !loading && <div className="text-center py-10 text-gray-500">
             <p>No warehouse data found. The source file might be empty or unavailable.</p>
           </div>
         )}
