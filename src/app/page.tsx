@@ -277,22 +277,22 @@ export default function Home() {
       // Un-flatten warehouse data
       const warehouseMap = new Map<number, Warehouse>();
       flatWarehouseData.forEach(row => {
-        const warehouseId = row.warehouseId;
+        const warehouseId = row.warehouseld;
         if (!warehouseId) return; // Skip empty rows
 
         if (!warehouseMap.has(warehouseId)) {
           warehouseMap.set(warehouseId, {
             id: warehouseId,
             name: row.warehouseName,
-            totalCapacity: row.warehouseTotalCapacity,
+            totalCapacity: row.totalCapacity,
             bins: [],
           });
         }
         warehouseMap.get(warehouseId)?.bins.push({
-          id: row.binId,
-          commodity: row.binCommodity,
-          tonnage: row.binTonnage,
-          code: row.binCode,
+          id: row.binld,
+          commodity: row.commodity,
+          tonnage: row.tonnage,
+          code: row.code,
         });
       });
       setWarehouses(Array.from(warehouseMap.values()));
