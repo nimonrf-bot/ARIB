@@ -367,7 +367,7 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
       warehouseMap.set(warehouseId, {
         id: warehouseId,
         name: row.warehousename,
-        totalCapacity: row.warehousetotalcapacity,
+        totalCapacity: parseFloat(row.warehousetotalcapacity) || 0,
         bins: [],
       });
     }
@@ -375,7 +375,7 @@ async function fetchWarehouseData(): Promise<Warehouse[]> {
     const binData = {
       id: row.binid,
       commodity: row.bincommodity,
-      tonnage: row.bintonnage,
+      tonnage: parseFloat(row.bintonnage) || 0,
       code: row.bincode,
     };
     
