@@ -28,7 +28,8 @@ function WarehouseAdminDashboard() {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Warehouses');
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-    saveAs(data, 'warehouse_template.xlsx');
+    // Correct the filename to match what the app expects
+    saveAs(data, 'warehouse_data.xlsx');
   };
 
   return (
@@ -44,14 +45,14 @@ function WarehouseAdminDashboard() {
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="font-semibold text-blue-800">Instructions:</h3>
             <ol className="list-decimal list-inside mt-2 text-sm text-blue-700 space-y-1">
-              <li>Click the button below to download the Excel template named <code className="bg-blue-100 p-1 rounded">warehouse_template.xlsx</code>.</li>
-              <li>Edit the file to update your warehouse information.</li>
-              <li>Upload the saved file to a public hosting service of your choice (e.g., inside your project's `public` folder).</li>
+              <li>Click the button below to download the Excel template named <code className="bg-blue-100 p-1 rounded">warehouse_data.xlsx</code>.</li>
+              <li>Edit the file to update your warehouse information. Do not change the filename.</li>
+              <li>Place the saved file inside your project's <code className="bg-blue-100 p-1 rounded">public</code> folder.</li>
               <li>
-                Update the URL in <code className="bg-blue-100 p-1 rounded">src/lib/config.ts</code> to point to your new file location.
+                Ensure the URL in <code className="bg-blue-100 p-1 rounded">src/lib/config.ts</code> points to your file's public location.
                 The current URL is: <a href={DATA_URLS.warehouses} target="_blank" rel="noopener noreferrer" className="underline">{DATA_URLS.warehouses}</a>
               </li>
-              <li>The homepage will automatically reflect the changes from the new file.</li>
+              <li>The homepage will automatically reflect the changes from the new file after you redeploy the site.</li>
             </ol>
           </div>
           <Button onClick={handleDownloadTemplate}>
