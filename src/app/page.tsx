@@ -245,6 +245,19 @@ const WarehouseCard = ({ warehouse }: { warehouse: Warehouse }) => {
   )
 }
 
+// Helper to normalize keys from Excel
+const normalizeKey = (key: string) => key.toLowerCase().replace(/\s+/g, '');
+
+const mapRowToSchema = (row: any) => {
+    const newRow: { [key: string]: any } = {};
+    for (const key in row) {
+        if (Object.prototype.hasOwnProperty.call(row, key)) {
+            newRow[normalizeKey(key)] = row[key];
+        }
+    }
+    return newRow;
+};
+
 export default function Home() {
   const [vessels, setVessels] = useState<Vessel[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -293,25 +306,27 @@ export default function Home() {
         throw new Error(`Sheet "${warehouseSheetName}" not found in the Excel file.`);
       }
       const flatWarehouseData: any[] = XLSX.utils.sheet_to_json(warehouseWorksheet);
+      
+      const normalizedData = flatWarehouseData.map(mapRowToSchema);
 
       const warehouseMap = new Map<number, Warehouse>();
-      flatWarehouseData.forEach(row => {
+      normalizedData.forEach(row => {
         const warehouseId = row.warehouseld;
         if (!warehouseId) return; 
 
         if (!warehouseMap.has(warehouseId)) {
           warehouseMap.set(warehouseId, {
             id: warehouseId,
-            name: row.warehouseName,
-            totalCapacity: row.totalCapacity,
+            name: row.warehousename,
+            totalCapacity: row.warehousetotalcapacity,
             bins: [],
           });
         }
         warehouseMap.get(warehouseId)?.bins.push({
           id: row.binld,
-          commodity: row.commodity,
-          tonnage: row.tonnage,
-          code: row.code,
+          commodity: row.bincommodity,
+          tonnage: row.bintonnage,
+          code: row.bincode,
         });
       });
       const warehouseData = Array.from(warehouseMap.values());
