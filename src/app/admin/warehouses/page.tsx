@@ -13,10 +13,10 @@ function WarehouseAdminDashboard() {
     // We need to flatten the data for a better Excel structure
     const flattenedData = defaultWarehouses.flatMap(w => 
       w.bins.map(b => ({
-        warehouseId: w.id,
+        warehouseld: w.id,
         warehouseName: w.name,
         warehouseTotalCapacity: w.totalCapacity,
-        binId: b.id,
+        binld: b.id,
         binCommodity: b.commodity,
         binTonnage: b.tonnage,
         binCode: b.code,
@@ -27,7 +27,7 @@ function WarehouseAdminDashboard() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Warehouses');
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-A' });
     saveAs(data, 'warehouse_template.xlsx');
   };
 
@@ -44,9 +44,9 @@ function WarehouseAdminDashboard() {
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="font-semibold text-blue-800">Instructions:</h3>
             <ol className="list-decimal list-inside mt-2 text-sm text-blue-700 space-y-1">
-              <li>Click the button below to download the Excel template.</li>
+              <li>Click the button below to download the Excel template named <code className="bg-blue-100 p-1 rounded">warehouse_template.xlsx</code>.</li>
               <li>Edit the file to update your warehouse information.</li>
-              <li>Upload the saved file to a public hosting service of your choice.</li>
+              <li>Upload the saved file to a public hosting service of your choice (e.g., inside your project's `public` folder).</li>
               <li>
                 Update the URL in <code className="bg-blue-100 p-1 rounded">src/lib/config.ts</code> to point to your new file location.
                 The current URL is: <a href={DATA_URLS.warehouses} target="_blank" rel="noopener noreferrer" className="underline">{DATA_URLS.warehouses}</a>

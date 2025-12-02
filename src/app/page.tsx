@@ -250,57 +250,78 @@ export default function Home() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
+    let vesselDataLoaded = false;
+    let warehouseDataLoaded = false;
+
+    // Fetch and parse vessel data
     try {
-      // Fetch and parse vessel data
+      console.log(`Fetching vessel data from: ${DATA_URLS.vessels}`);
       const vesselRes = await fetch(DATA_URLS.vessels);
-      if (!vesselRes.ok) throw new Error(`Failed to fetch vessel data: ${vesselRes.statusText}`);
+      if (!vesselRes.ok) {
+        throw new Error(`HTTP error ${vesselRes.status}`);
+      }
       const vesselArrayBuffer = await vesselRes.arrayBuffer();
       const vesselWorkbook = XLSX.read(vesselArrayBuffer, { type: 'buffer' });
       const vesselSheetName = vesselWorkbook.SheetNames[0];
       const vesselWorksheet = vesselWorkbook.Sheets[vesselSheetName];
       const vesselData: Vessel[] = XLSX.utils.sheet_to_json(vesselWorksheet);
       setVessels(vesselData);
+      vesselDataLoaded = true;
+      console.log("Successfully parsed vessel data:", vesselData);
+    } catch (e: any) {
+      console.error(`Failed to fetch or parse vessel data from ${DATA_URLS.vessels}:`, e);
+      setError(prev => prev ? `${prev}, and failed to load vessel data.` : 'Failed to load vessel data.');
+    }
 
-      // Fetch and parse warehouse data
+    // Fetch and parse warehouse data
+    try {
+      console.log(`Fetching warehouse data from: ${DATA_URLS.warehouses}`);
       const warehouseRes = await fetch(DATA_URLS.warehouses);
-      if (!warehouseRes.ok) throw new Error(`Failed to fetch warehouse data: ${warehouseRes.statusText}`);
+       if (!warehouseRes.ok) {
+        throw new Error(`HTTP error ${warehouseRes.status}`);
+      }
       const warehouseArrayBuffer = await warehouseRes.arrayBuffer();
       const warehouseWorkbook = XLSX.read(warehouseArrayBuffer, { type: 'buffer' });
       const warehouseSheetName = warehouseWorkbook.SheetNames[0];
       const warehouseWorksheet = warehouseWorkbook.Sheets[warehouseSheetName];
       const flatWarehouseData: any[] = XLSX.utils.sheet_to_json(warehouseWorksheet);
 
-      // Un-flatten warehouse data
       const warehouseMap = new Map<number, Warehouse>();
       flatWarehouseData.forEach(row => {
         const warehouseId = row.warehouseld;
-        if (!warehouseId) return; // Skip empty rows
+        if (!warehouseId) return; 
 
         if (!warehouseMap.has(warehouseId)) {
           warehouseMap.set(warehouseId, {
             id: warehouseId,
             name: row.warehouseName,
-            totalCapacity: row.totalCapacity,
+            totalCapacity: row.warehouseTotalCapacity,
             bins: [],
           });
         }
         warehouseMap.get(warehouseId)?.bins.push({
           id: row.binld,
-          commodity: row.commodity,
-          tonnage: row.tonnage,
-          code: row.code,
+          commodity: row.binCommodity,
+          tonnage: row.binTonnage,
+          code: row.binCode,
         });
       });
-      setWarehouses(Array.from(warehouseMap.values()));
-
+      const warehouseData = Array.from(warehouseMap.values());
+      setWarehouses(warehouseData);
+      warehouseDataLoaded = true;
+      console.log("Successfully parsed warehouse data:", warehouseData);
     } catch (e: any) {
-      console.error("Failed to load data:", e);
-      setError("Failed to load data from the source files. Please ensure the URLs in src/lib/config.ts are correct and the files are publicly accessible.");
+      console.error(`Failed to fetch or parse warehouse data from ${DATA_URLS.warehouses}:`, e);
+      setError(prev => prev ? `${prev}, and failed to load warehouse data.` : 'Failed to load warehouse data.');
     } finally {
+      if (vesselDataLoaded || warehouseDataLoaded) {
+        setLastUpdated(new Date());
+      }
       setLoading(false);
     }
   };
@@ -316,12 +337,17 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 bg-gray-50">
       <div className="w-full max-w-7xl">
-        <div className="flex justify-between items-center w-full mb-8">
+        <div className="flex justify-between items-center w-full mb-4">
             <div className="flex-1"></div>
             <h1 className="text-3xl font-bold text-gray-800 flex-grow text-center">
              ARIB Vessel
             </h1>
-            <div className="flex-1 flex justify-end">
+            <div className="flex-1 flex justify-end items-center gap-4">
+              {lastUpdated && (
+                <div className="text-sm text-gray-500">
+                  Last Updated: {lastUpdated.toLocaleString()}
+                </div>
+              )}
               <Button onClick={handleRefresh}>
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Refresh
@@ -333,10 +359,10 @@ export default function Home() {
            <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
-        ) : error ? (
+        ) : error && !vessels.length ? (
           <div className="text-center py-10 text-red-600 bg-red-50 p-4 rounded-lg">
-            <p className="font-bold">Error</p>
-            <p>{error}</p>
+            <p className="font-bold">Error Loading Vessels</p>
+            <p>Could not load vessel data. Please check the file at the configured URL and ensure it is accessible.</p>
           </div>
         ) : vessels && vessels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -359,10 +385,10 @@ export default function Home() {
           <div className="flex justify-center items-center h-64">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
-        ) : error ? (
+        ) : error && !warehouses.length ? (
            <div className="text-center py-10 text-red-600 bg-red-50 p-4 rounded-lg">
-            <p className="font-bold">Error</p>
-            <p>Could not load warehouse data.</p>
+            <p className="font-bold">Error Loading Warehouses</p>
+            <p>Could not load warehouse data. Please check the file at the configured URL and ensure it is accessible.</p>
           </div>
         ) : warehouses && warehouses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
